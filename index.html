@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v6.8</title>
+    <title>AI Μετρητής Θερμίδων v6.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -315,13 +315,6 @@
             function openAddModal(isEditing = false, product = null) {
                 editMode = isEditing;
                 const m = modal;
-                m.querySelector('#capture-label-btn').onclick = onCaptureLabel;
-                m.querySelector('#confirm-data-btn').onclick = onConfirmData;
-                m.querySelector('#capture-product-btn').onclick = onCaptureProduct;
-                m.querySelector('#save-product-btn').onclick = onSaveProduct;
-                m.querySelectorAll('.modal-cancel-btn').forEach(btn => btn.onclick = closeModal);
-                m.querySelector('#recapture-product-btn').onclick = () => showModalStep(3);
-
                 if (isEditing && product) {
                     editProductId = product.id;
                     m.querySelector('#calories-input').value = product.caloriesPer100g;
@@ -416,8 +409,16 @@
                 return expectJson ? JSON.parse(aiResponseText) : aiResponseText;
             }
             
-            document.body.addEventListener('click', e => { if (e.target.matches('#add-product-from-library-btn')) openAddModal(false); });
-
+            document.body.addEventListener('click', e => {
+                if (e.target.matches('.modal-cancel-btn')) closeModal();
+                if (e.target.matches('#add-product-from-library-btn')) openAddModal(false);
+                if (e.target.matches('#capture-label-btn')) onCaptureLabel();
+                if (e.target.matches('#confirm-data-btn')) onConfirmData();
+                if (e.target.matches('#capture-product-btn')) onCaptureProduct();
+                if (e.target.matches('#save-product-btn')) onSaveProduct();
+                if (e.target.matches('#recapture-product-btn')) showModalStep(3);
+            });
+            
             loadData();
             switchView('scanner-view');
         });
