@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v6.9</title>
+    <title>AI Μετρητής Θερμίδων v6.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -142,8 +142,10 @@
             let editMode = false;
             let editProductId = null;
             let newProductData = {};
+            let cameraPermissionGranted = false;
 
             function switchView(viewId) {
+                stopCamera(mainStream); // Stop main camera when switching views
                 appViews.forEach(view => view.classList.remove('active'));
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 const newView = document.getElementById(viewId);
@@ -151,18 +153,21 @@
                 const link = document.querySelector(`.nav-link[data-view="${viewId}"]`);
                 if(link) { headerTitle.textContent = link.textContent; link.classList.add('active'); }
                 sideMenu.classList.add('hidden');
+
+                if (viewId === 'scanner-view' && cameraPermissionGranted) {
+                    initializeScannerCamera();
+                } else if (viewId === 'scanner-view') {
+                     cameraActivator.classList.remove('hidden');
+                }
+
+                if(viewId === 'calendar-view') renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                if(viewId === 'library-view') renderProductLibrary();
             }
 
             menuBtn.addEventListener('click', () => sideMenu.classList.toggle('hidden'));
             sideMenu.addEventListener('click', (e) => { if (e.target === sideMenu) sideMenu.classList.add('hidden'); });
             navLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const viewId = e.target.dataset.view;
-                    switchView(viewId);
-                    if(viewId === 'calendar-view') renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-                    if(viewId === 'library-view') renderProductLibrary();
-                });
+                link.addEventListener('click', (e) => { e.preventDefault(); switchView(e.target.dataset.view); });
             });
 
             function saveData() { localStorage.setItem('mealData', JSON.stringify(mealData)); localStorage.setItem('productLibrary', JSON.stringify(productLibrary)); }
@@ -213,13 +218,11 @@
 
             async function startCamera(videoElement, activatorElement = null, forLabel = false) {
                 try {
-                    if(videoElement.srcObject) videoElement.srcObject.getTracks().forEach(track => track.stop());
+                    if(videoElement.srcObject) stopCamera(videoElement.srcObject);
                     const constraints = { video: { facingMode: 'environment' } };
                     if (forLabel) {
                         const capabilities = navigator.mediaDevices.getSupportedConstraints();
-                        if (capabilities.focusMode) {
-                            constraints.video.advanced = [{ focusMode: "continuous" }];
-                        }
+                        if (capabilities.focusMode) constraints.video.advanced = [{ focusMode: "continuous" }];
                     }
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     videoElement.srcObject = stream;
@@ -228,21 +231,24 @@
                     if (videoElement.id === 'video') { captureBtn.disabled = false; document.getElementById('scan-instruction').textContent = 'Σαρώστε ένα φαγητό...'; }
                     return stream;
                 } catch (err) {
+                    cameraPermissionGranted = false;
                     const message = "Η πρόσβαση στην κάμερα απέτυχε. Ελέγξτε τις άδειες του browser και ανανεώστε τη σελίδα.";
                     if (activatorElement) {
-                         activatorElement.innerHTML = `<div class="p-4 text-center"><p class="text-red-400">${message}</p><button id="retry-camera-btn" class="mt-4 bg-blue-600 px-4 py-2 rounded-lg">Δοκιμάστε ξανά</button></div>`;
-                         document.getElementById('retry-camera-btn').addEventListener('click', () => {
-                             cameraActivator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`;
-                             startCamera(video, cameraActivator);
-                         });
-                    } else {
-                        await showCustomAlert(message);
-                    }
+                         const activatorContent = activatorElement.querySelector('p')?.parentElement || activatorElement;
+                         activatorContent.innerHTML = `<div class="p-4 text-center"><p class="text-red-400">${message}</p><button id="retry-camera-btn" class="mt-4 bg-blue-600 px-4 py-2 rounded-lg">Δοκιμάστε ξανά</button></div>`;
+                         document.getElementById('retry-camera-btn').addEventListener('click', () => initializeScannerCamera());
+                    } else { await showCustomAlert(message); }
                     return null;
                 }
             }
             function stopCamera(stream) { if (stream) stream.getTracks().forEach(track => track.stop()); }
-            cameraActivator.addEventListener('click', () => { cameraActivator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`; mainStream = startCamera(video, cameraActivator); });
+            
+            async function initializeScannerCamera() {
+                cameraActivator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`;
+                mainStream = await startCamera(video, cameraActivator);
+                if (mainStream) cameraPermissionGranted = true;
+            }
+            cameraActivator.addEventListener('click', initializeScannerCamera);
 
             captureBtn.addEventListener('click', async () => {
                 showLoading('Έξυπνη ανάλυση...');
@@ -250,23 +256,37 @@
                 canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const base64ImageData = canvas.toDataURL('image/png').split(',')[1];
-                const productNames = productLibrary.map(p => `"${p.name}"`);
-                const prompt = `Analyze the main food item in this image. Here is a list of my personal saved products: [${productNames.join(', ')}]. First, does the item in the image visually match any of the products in that list? If YES, respond with ONLY a valid JSON object like this: {"match_type": "personal", "product_name": "The name from the list that matched"}. If NO, it's a generic food. Look for a 1 Euro coin and respond with ONLY a valid JSON object like this: {"match_type": "generic", "food_name_greek": "Name", "calories_per_100g": 123, "estimated_weight_g": 123}. If you cannot identify food, respond with {"match_type": "none"}.`;
+                
                 try {
-                    const aiResponse = await callAI(prompt, base64ImageData);
-                    if (aiResponse.match_type === 'personal') {
-                        const matchedProduct = productLibrary.find(p => p.name === aiResponse.product_name);
-                        if (!matchedProduct) throw new Error(`AI hallucinated a product name: ${aiResponse.product_name}`);
-                        const finalCalories = Math.round((matchedProduct.weight / 100) * matchedProduct.caloriesPer100g);
-                        addEntryToHistory({ name: matchedProduct.name, weight: matchedProduct.weight, calories: finalCalories });
-                        displayScanResult(`<p class="text-purple-400 text-sm">Από τη Βιβλιοθήκη:</p><p class="text-xl font-semibold">${matchedProduct.name}</p><p class="text-3xl font-bold text-cyan-400 mt-1">${finalCalories} kcal</p>`);
-                    } else if (aiResponse.match_type === 'generic') {
-                        const { food_name_greek, calories_per_100g, estimated_weight_g } = aiResponse;
-                        if (!food_name_greek || !calories_per_100g || !estimated_weight_g) throw new Error("AI failed to provide all generic food details.");
-                        const finalCalories = Math.round((estimated_weight_g / 100) * calories_per_100g);
-                        addEntryToHistory({ name: food_name_greek, weight: Math.round(estimated_weight_g), calories: finalCalories });
-                        displayScanResult(`<p class="text-xl font-semibold">${food_name_greek}</p><p class="text-sm text-gray-400">Εκτίμ. Βάρος (AI): <span class="font-bold text-white">${Math.round(estimated_weight_g)}g</span></p><p class="text-3xl font-bold text-cyan-400 mt-1">${finalCalories} kcal</p>`);
-                    } else { throw new Error("Could not identify food or match type."); }
+                    const keywordsPrompt = `Describe the main food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings. Example: ["banana", "fruit", "yellow"]`;
+                    const scannedKeywords = await callAI(keywordsPrompt, base64ImageData);
+
+                    let bestMatch = null;
+                    let maxMatchCount = 0;
+                    if (productLibrary.length > 0) {
+                        for (const product of productLibrary) {
+                            const libraryKeywords = product.keywords || [];
+                            const matchCount = scannedKeywords.filter(keyword => libraryKeywords.includes(keyword)).length;
+                            if (matchCount > maxMatchCount && matchCount >= 2) { maxMatchCount = matchCount; bestMatch = product; }
+                        }
+                    }
+
+                    if (bestMatch) {
+                        const finalCalories = Math.round((bestMatch.weight / 100) * bestMatch.caloriesPer100g);
+                        addEntryToHistory({ name: bestMatch.name, weight: bestMatch.weight, calories: finalCalories });
+                        displayScanResult(`<p class="text-purple-400 text-sm">Από τη Βιβλιοθήκη:</p><p class="text-xl font-semibold">${bestMatch.name}</p><p class="text-3xl font-bold text-cyan-400 mt-1">${finalCalories} kcal</p>`);
+                    } else {
+                        showLoading('Εκτίμηση θερμίδων...');
+                        const genericPrompt = `Analyze the image. First, check if a 1 Euro coin is clearly visible next to the food. If YES, estimate the food's weight in grams and respond with {"analysis_type": "coin", "food_name_greek": "Name", "calories_per_100g": 123, "estimated_weight_g": 123}. If NO coin is visible, identify the food and provide calories for a typical medium serving and respond with {"analysis_type": "average", "food_name_greek": "Name", "calories": 123, "weight": 150}. If you cannot identify food, respond with {}.`;
+                        const aiResponse = await callAI(genericPrompt, base64ImageData);
+                        if (aiResponse.analysis_type === 'coin') {
+                            const { food_name_greek, calories_per_100g, estimated_weight_g } = aiResponse;
+                            addEntryAndDisplayGeneric(food_name_greek, Math.round(estimated_weight_g), Math.round((estimated_weight_g / 100) * calories_per_100g), true);
+                        } else if (aiResponse.analysis_type === 'average') {
+                            const { food_name_greek, calories, weight } = aiResponse;
+                            addEntryAndDisplayGeneric(food_name_greek, weight, calories, false);
+                        } else { throw new Error("Could not identify food or match type."); }
+                    }
                 } catch (e) { showError('Απέτυχε η ανάλυση. Δοκιμάστε ξανά.'); console.error(e); } finally { hideLoading(); }
             });
 
@@ -279,6 +299,11 @@
                 mealData[dateStr].push(newMeal);
                 saveData();
                 showCustomAlert(`"${entry.name}" προστέθηκε στη σημερινή καταγραφή!`);
+            }
+             function addEntryAndDisplayGeneric(name, weight, calories, isEstimate) {
+                addEntryToHistory({ name, weight, calories });
+                const weightText = isEstimate ? `Εκτίμ. Βάρος (AI): <span class="font-bold text-white">${weight}g</span>` : `Μέση Μερίδα: <span class="font-bold text-white">${weight}g</span>`;
+                displayScanResult(`<p class="text-xl font-semibold">${name}</p><p class="text-sm text-gray-400">${weightText}</p><p class="text-3xl font-bold text-cyan-400 mt-1">${calories} kcal</p>`);
             }
             function displayScanResult(htmlContent) { resultText.classList.remove('hidden'); loadingIndicator.classList.add('hidden'); resultText.innerHTML = htmlContent; }
 
@@ -317,24 +342,10 @@
                 const m = modal;
                 if (isEditing && product) {
                     editProductId = product.id;
-                    m.querySelector('#calories-input').value = product.caloriesPer100g;
-                    m.querySelector('#weight-input').value = product.weight;
-                    m.querySelector('#product-name-input').value = product.name;
-                    m.querySelector('#product-preview-img').src = product.imageBase64;
-                    newProductData = { imageBase64: product.imageBase64 };
-                    m.querySelector('#step2-title').textContent = 'Επεξεργασία Δεδομένων';
-                    m.querySelector('#step4-title').textContent = 'Επεξεργασία Ονόματος';
-                    m.querySelector('#save-product-btn').textContent = 'Αποθήκευση Αλλαγών';
-                    m.querySelector('#recapture-product-btn').classList.remove('hidden');
+                    m.querySelector('#calories-input').value = product.caloriesPer100g; m.querySelector('#weight-input').value = product.weight; m.querySelector('#product-name-input').value = product.name; m.querySelector('#product-preview-img').src = product.imageBase64; newProductData = { imageBase64: product.imageBase64, keywords: product.keywords }; m.querySelector('#step2-title').textContent = 'Επεξεργασία Δεδομένων'; m.querySelector('#step4-title').textContent = 'Επεξεργασία Ονόματος'; m.querySelector('#save-product-btn').textContent = 'Αποθήκευση Αλλαγών'; m.querySelector('#recapture-product-btn').classList.remove('hidden');
                 } else {
                     editProductId = null;
-                    ['#calories-input', '#weight-input', '#product-name-input'].forEach(sel => m.querySelector(sel).value = '');
-                    m.querySelector('#product-preview-img').src = '';
-                    newProductData = {};
-                    m.querySelector('#step2-title').textContent = 'Βήμα 2: Επιβεβαίωση Θερμίδων και Βάρους';
-                    m.querySelector('#step4-title').textContent = 'Βήμα 4: Ονομασία';
-                    m.querySelector('#save-product-btn').textContent = 'Αποθήκευση Προϊόντος';
-                    m.querySelector('#recapture-product-btn').classList.add('hidden');
+                    ['#calories-input', '#weight-input', '#product-name-input'].forEach(sel => m.querySelector(sel).value = ''); m.querySelector('#product-preview-img').src = ''; newProductData = {}; m.querySelector('#step2-title').textContent = 'Βήμα 2: Επιβεβαίωση Θερμίδων και Βάρους'; m.querySelector('#step4-title').textContent = 'Βήμα 4: Ονομασία'; m.querySelector('#save-product-btn').textContent = 'Αποθήκευση Προϊόντος'; m.querySelector('#recapture-product-btn').classList.add('hidden');
                 }
                 m.classList.remove('hidden'); m.classList.add('flex');
                 startCamera(m.querySelector('#modal-video'), null, true).then(stream => modalStream = stream);
@@ -382,18 +393,24 @@
                 const calories = parseInt(modal.querySelector('#calories-input').value, 10);
                 const weight = parseInt(modal.querySelector('#weight-input').value, 10);
                 if (!name || isNaN(calories) || isNaN(weight)) { await showCustomAlert("Συμπληρώστε όλα τα πεδία."); return; }
-                if (editMode && editProductId) {
-                    const idx = productLibrary.findIndex(p => p.id === editProductId);
-                    if (idx !== -1) { productLibrary[idx] = {...productLibrary[idx], name, caloriesPer100g: calories, weight, imageBase64: newProductData.imageBase64 || productLibrary[idx].imageBase64 }; }
-                    await showCustomAlert('Οι αλλαγές αποθηκεύτηκαν!');
-                } else {
-                    productLibrary.push({ id: `prod_${Date.now()}`, name, caloriesPer100g: calories, weight, imageBase64: newProductData.imageBase64 });
-                    await showCustomAlert(`Το προϊόν "${name}" αποθηκεύτηκε!`);
-                }
-                saveData();
-                closeModal();
-                switchView('library-view');
-                renderProductLibrary();
+                
+                const btn = modal.querySelector('#save-product-btn');
+                btn.textContent = "Γίνεται ανάλυση εικόνας..."; btn.disabled = true;
+                const keywordsPrompt = `Describe the food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings. Example: ["protein bar", "chocolate", "nuts"]`;
+                try {
+                    const keywords = await callAI(keywordsPrompt, newProductData.imageBase64.split(',')[1]);
+                    newProductData.keywords = keywords;
+                    if (editMode && editProductId) {
+                        const idx = productLibrary.findIndex(p => p.id === editProductId);
+                        if (idx !== -1) { productLibrary[idx] = {...productLibrary[idx], name, caloriesPer100g: calories, weight, keywords: newProductData.keywords, imageBase64: newProductData.imageBase64 || productLibrary[idx].imageBase64 }; }
+                        await showCustomAlert('Οι αλλαγές αποθηκεύτηκαν!');
+                    } else {
+                        productLibrary.push({ id: `prod_${Date.now()}`, name, caloriesPer100g: calories, weight, imageBase64: newProductData.imageBase64, keywords: newProductData.keywords });
+                        await showCustomAlert(`Το προϊόν "${name}" αποθηκεύτηκε!`);
+                    }
+                    saveData(); closeModal(); switchView('library-view'); renderProductLibrary();
+                } catch(e) { await showCustomAlert('Απέτυχε η δημιουργία οπτικής περιγραφής. Το προϊόν δεν αποθηκεύτηκε.'); } 
+                finally { btn.textContent = "Αποθήκευση"; btn.disabled = false; }
             }
 
             async function callAI(prompt, base64ImageData, expectJson = true) {
