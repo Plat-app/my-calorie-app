@@ -416,7 +416,7 @@
             async function callAI(prompt, base64ImageData, expectJson = true) {
                 const payload = { contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: base64ImageData } }]}]};
                 if(expectJson) payload.generationConfig = { responseMimeType: "application/json" };
-                const apiKey = "";
+                const apiKey = "AIzaSyCc3SAooOx7gLDPcWZeKrpCC-iBDDpq1Gc";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API Error: ${response.status}`);
