@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v6.7</title>
+    <title>AI Μετρητής Θερμίδων v6.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -216,7 +216,10 @@
                     if(videoElement.srcObject) videoElement.srcObject.getTracks().forEach(track => track.stop());
                     const constraints = { video: { facingMode: 'environment' } };
                     if (forLabel) {
-                        constraints.video.advanced = [{ focusMode: "continuous" }];
+                        const capabilities = navigator.mediaDevices.getSupportedConstraints();
+                        if (capabilities.focusMode) {
+                            constraints.video.advanced = [{ focusMode: "continuous" }];
+                        }
                     }
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     videoElement.srcObject = stream;
@@ -248,7 +251,7 @@
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const base64ImageData = canvas.toDataURL('image/png').split(',')[1];
                 const productNames = productLibrary.map(p => `"${p.name}"`);
-                const prompt = `Analyze the main food item in this image. Here is a list of my personal saved products: [${productNames.join(', ')}]. First, does the item visually match any of the products in that list? If YES, respond with ONLY a valid JSON object like this: {"match_type": "personal", "product_name": "The name from the list that matched"}. If NO, it's a generic food. Look for a 1 Euro coin and respond with ONLY a valid JSON object like this: {"match_type": "generic", "food_name_greek": "Name", "calories_per_100g": 123, "estimated_weight_g": 123}. If neither, respond with {}.`;
+                const prompt = `Analyze the main food item in this image. Here is a list of my personal saved products: [${productNames.join(', ')}]. First, does the item in the image visually match any of the products in that list? If YES, respond with ONLY a valid JSON object like this: {"match_type": "personal", "product_name": "The name from the list that matched"}. If NO, it's a generic food. Look for a 1 Euro coin and respond with ONLY a valid JSON object like this: {"match_type": "generic", "food_name_greek": "Name", "calories_per_100g": 123, "estimated_weight_g": 123}. If you cannot identify food, respond with {"match_type": "none"}.`;
                 try {
                     const aiResponse = await callAI(prompt, base64ImageData);
                     if (aiResponse.match_type === 'personal') {
@@ -355,11 +358,11 @@
                 canvas.width = mVideo.videoWidth; canvas.height = mVideo.videoHeight;
                 context.drawImage(mVideo, 0, 0, canvas.width, canvas.height);
                 const base64ImageData = canvas.toDataURL('image/png').split(',')[1];
-                const prompt = `From the image of this nutrition label, extract the number of calories (kcal) per 100g. Respond with only a single number.`;
+                const prompt = `From the image of this nutrition label, extract the number of calories (kcal) per 100g. Please respond with ONLY a valid JSON object like this: {"calories": 123}`;
                 try {
-                    const aiResponse = await callAI(prompt, base64ImageData, false);
-                    const calories = parseInt(aiResponse, 10);
-                    if (isNaN(calories)) throw new Error("Could not parse calories.");
+                    const aiResponse = await callAI(prompt, base64ImageData);
+                    const calories = parseInt(aiResponse.calories, 10);
+                    if (isNaN(calories)) throw new Error("Could not parse calories from AI response.");
                     modal.querySelector('#calories-input').value = calories;
                     showModalStep(2);
                 } catch (e) { await showCustomAlert("Δεν ήταν δυνατή η ανάγνωση. Εισάγετε χειροκίνητα."); showModalStep(2); } 
