@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v12.1</title>
+    <title>AI Μετρητής Θερμίδων v12.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -260,18 +260,29 @@
                 if (maxCalories === 0) maxCalories = 2000;
 
                 last7DaysData.forEach(day => {
-                    const barHeight = Math.max(1, (day.calories / maxCalories) * 100);
+                    const barHeightPercent = Math.max(0.5, (day.calories / maxCalories) * 100);
                     const barColor = day.dateStr === selectedDateStr ? 'bg-cyan-400' : 'bg-gray-600';
                     
                     const dayWrapper = document.createElement('div');
-                    dayWrapper.className = 'chart-day-wrapper flex-1 flex flex-col items-center justify-end h-full cursor-pointer p-1';
+                    dayWrapper.className = 'chart-day-wrapper flex-1 flex flex-col items-center h-full cursor-pointer p-1';
                     dayWrapper.dataset.date = day.dateStr;
 
-                    dayWrapper.innerHTML = `
-                        <div class="text-xs text-gray-400 mb-1 h-4">${day.calories > 0 ? day.calories : ''}</div>
-                        <div class="flex-grow flex items-end w-full"><div class="${barColor} w-full rounded-t-md" style="height: ${barHeight}%" title="${day.calories} kcal"></div></div>
-                        <div class="text-xs mt-1">${day.label}</div>
+                    const barAndTextContainer = document.createElement('div');
+                    barAndTextContainer.className = 'relative w-full flex-grow flex items-end';
+
+                    barAndTextContainer.innerHTML = `
+                        <div class="absolute text-xs text-gray-400 text-center w-full pointer-events-none" style="bottom: ${barHeightPercent}%; margin-bottom: 4px;">
+                            ${day.calories > 0 ? day.calories : ''}
+                        </div>
+                        <div class="${barColor} w-full rounded-t-md" style="height: ${barHeightPercent}%" title="${day.calories} kcal"></div>
                     `;
+
+                    const dayLabel = document.createElement('div');
+                    dayLabel.className = 'text-xs mt-1';
+                    dayLabel.textContent = day.label;
+                    
+                    dayWrapper.appendChild(barAndTextContainer);
+                    dayWrapper.appendChild(dayLabel);
                     weeklyChartEl.appendChild(dayWrapper);
                 });
             }
@@ -539,12 +550,14 @@
             }
 
             async function openAddModal(isEditing = false, product = null) {
+                let editProductId = null;
+                let newProductData = {};
                 editMode = isEditing;
                 const m = modal;
                 m.querySelector('#capture-label-btn').onclick = onCaptureLabel;
                 m.querySelector('#confirm-data-btn').onclick = onConfirmData;
                 m.querySelector('#capture-product-btn').onclick = onCaptureProduct;
-                m.querySelector('#save-product-btn').onclick = onSaveProduct;
+                m.querySelector('#save-product-btn').onclick = () => onSaveProduct(editProductId, newProductData);
                 m.querySelectorAll('.modal-cancel-btn').forEach(btn => btn.onclick = closeModal);
                 m.querySelector('#recapture-product-btn').onclick = () => showModalStep(3);
                 if (isEditing && product) {
@@ -595,7 +608,7 @@
                 modal.querySelector('#product-preview-img').src = newProductData.imageBase64;
                 showModalStep(4);
             }
-            async function onSaveProduct() {
+            async function onSaveProduct(editProductId, newProductData) {
                 const name = modal.querySelector('#product-name-input').value.trim();
                 const calories = parseInt(modal.querySelector('#calories-input').value, 10);
                 const weight = parseInt(modal.querySelector('#weight-input').value, 10);
