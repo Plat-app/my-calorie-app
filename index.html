@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων</title>
+    <title>AI Μετρητής Θερμίδων v14.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,9 +81,23 @@
                     </div>
                     <video id="video" class="hidden" playsinline autoplay muted></video>
                 </div>
-                <p id="scan-instruction" class="text-center text-xs text-amber-400 mb-4 bg-gray-700/50 p-2 rounded-lg">Ενεργοποιήστε την κάμερα. Ανιχνεύει αυτόματα barcodes.</p>
+                <p id="scan-instruction" class="text-center text-xs text-amber-400 mb-4 bg-gray-700/50 p-2 rounded-lg">Ενεργοποιήστε την κάμερα για να ξεκινήσετε.</p>
                 <canvas id="canvas" class="hidden"></canvas>
                 <div class="flex justify-center mb-6"><button id="capture-btn" class="shutter-button transition-all w-20 h-20 bg-white rounded-full border-4 border-gray-500 flex items-center justify-center focus:outline-none" disabled><div class="w-16 h-16 bg-white rounded-full border-2 border-gray-900"></div></button></div>
+            </div>
+        </div>
+
+        <!-- Confirmation View -->
+        <div id="confirmation-view" class="app-view max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Επιβεβαίωση & Λεπτομέρειες</h2>
+            <img id="confirmation-image" src="" class="rounded-lg w-full mb-4">
+            <div class="mb-4">
+                <label for="details-input" class="block text-sm font-medium text-gray-300 mb-1">Προσθέστε λεπτομέρειες (προαιρετικό)</label>
+                <textarea id="details-input" placeholder="π.χ. με 2 φέτες τυρί, χωρίς σως" class="w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white" rows="3"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="retake-photo-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg">Νέα Λήψη</button>
+                <button id="analyze-final-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg">Ανάλυση Γεύματος</button>
             </div>
         </div>
 
@@ -173,6 +187,12 @@
                 dialogOkBtn: document.getElementById('dialog-ok-btn'),
                 dialogCancelBtn: document.getElementById('dialog-cancel-btn'),
                 textAnalyzerFab: document.getElementById('text-analyzer-fab'),
+                confirmationView: document.getElementById('confirmation-view'),
+                confirmationImage: document.getElementById('confirmation-image'),
+                detailsInput: document.getElementById('details-input'),
+                retakePhotoBtn: document.getElementById('retake-photo-btn'),
+                analyzeFinalBtn: document.getElementById('analyze-final-btn'),
+                toastNotification: document.getElementById('toast-notification'),
             };
 
             let mealData = {};
@@ -180,21 +200,22 @@
             let currentDate = new Date();
             let mainStream, modalStream;
             let cameraPermissionGranted = false;
+            let lastCapturedImage = null;
             let editMode = false;
             let editProductId = null;
             let newProductData = {};
 
             function switchView(viewId) {
-                if (mainStream) { stopCamera(mainStream); mainStream = null; Quagga.stop(); }
+                if (mainStream) { stopCamera(mainStream); mainStream = null; }
                 allElements.appViews.forEach(view => view.classList.remove('active'));
                 allElements.navLinks.forEach(l => l.classList.remove('active'));
                 const newView = document.getElementById(viewId);
                 if(newView) newView.classList.add('active');
                 const link = document.querySelector(`.nav-link[data-view="${viewId}"]`);
                 if(link) { allElements.headerTitle.textContent = link.textContent; link.classList.add('active'); }
-                const isScannerView = viewId === 'scanner-view';
-                allElements.fabScanBtn.style.display = isScannerView ? 'none' : 'flex';
-                allElements.textAnalyzerFab.style.display = isScannerView ? 'none' : 'flex';
+                const isSpecialView = viewId === 'scanner-view' || viewId === 'confirmation-view';
+                allElements.fabScanBtn.style.display = isSpecialView ? 'none' : 'flex';
+                allElements.textAnalyzerFab.style.display = isSpecialView ? 'none' : 'flex';
                 allElements.sideMenu.classList.add('hidden');
                 if (viewId === 'today-view') renderTodayView();
                 if (viewId === 'calendar-view') renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
@@ -339,21 +360,20 @@
                 const activator = document.getElementById('camera-activator');
                 activator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`;
                 mainStream = await startCamera(allElements.video, activator);
-                if (mainStream) {
-                    cameraPermissionGranted = true;
-                }
+                if (mainStream) cameraPermissionGranted = true;
             }
             allElements.cameraActivator.addEventListener('click', initializeScannerCamera);
             
             allElements.captureBtn.addEventListener('click', async () => {
-                showToast("έξυπνη σάρωση...");
-                switchView('today-view');
                 const context = allElements.canvas.getContext('2d');
                 allElements.canvas.width = allElements.video.videoWidth; 
                 allElements.canvas.height = allElements.video.videoHeight;
                 context.drawImage(allElements.video, 0, 0, allElements.canvas.width, allElements.canvas.height);
                 const base64ImageData = allElements.canvas.toDataURL('image/png').split(',')[1];
                 
+                switchView('today-view');
+                showToast("έξυπνη σάρωση...");
+
                 analyzeImage(base64ImageData);
             });
 
