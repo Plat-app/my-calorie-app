@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v12.0</title>
+    <title>AI Μετρητής Θερμίδων v12.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +31,8 @@
             bottom: 1.5rem;
             z-index: 30;
         }
+        .chart-day-wrapper { transition: background-color 0.2s; }
+        .chart-day-wrapper:hover { background-color: rgba(74, 85, 104, 0.3); border-radius: 0.5rem; }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -54,13 +56,13 @@
         <div id="today-view" class="app-view active max-w-md mx-auto">
             <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
                 <h2 class="text-lg font-semibold text-gray-300 mb-4">Επισκόπηση 7 Ημερών</h2>
-                <div id="weekly-chart" class="h-40 flex justify-between items-end space-x-2"></div>
+                <div id="weekly-chart" class="h-48 flex justify-between items-end space-x-1"></div>
             </div>
             <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
-                <p class="text-gray-400">Σύνολο Σήμερα</p>
+                <p class="text-gray-400">Σύνολο Θερμίδων</p>
                 <p id="today-total-calories" class="text-5xl font-bold text-cyan-400">0 kcal</p>
             </div>
-            <h2 class="text-lg font-semibold mb-2">Γεύματα Ημέρας</h2>
+            <h2 id="today-log-list-title" class="text-lg font-semibold mb-2">Γεύματα Ημέρας</h2>
             <ul id="today-log-list" class="space-y-2 pb-24"></ul>
         </div>
         
@@ -77,11 +79,6 @@
                 <p id="scan-instruction" class="text-center text-xs text-amber-400 mb-4 bg-gray-700/50 p-2 rounded-lg">Ενεργοποιήστε την κάμερα για να ξεκινήσετε.</p>
                 <canvas id="canvas" class="hidden"></canvas>
                 <div class="flex justify-center mb-6"><button id="capture-btn" class="shutter-button transition-all w-20 h-20 bg-white rounded-full border-4 border-gray-500 flex items-center justify-center focus:outline-none" disabled><div class="w-16 h-16 bg-white rounded-full border-2 border-gray-900"></div></button></div>
-                <div id="result-container" class="bg-gray-700/50 p-4 rounded-xl min-h-[120px] flex items-center justify-center text-center">
-                    <div id="loading" class="hidden flex-col items-center"><div class="spinner w-8 h-8 rounded-full border-4 border-gray-500 mb-2"></div><p id="loading-text" class="text-gray-400">Ανάλυση...</p></div>
-                    <div id="result-text"><p class="text-gray-400">Τα αποτελέσματα θα εμφανιστούν εδώ.</p></div>
-                    <div id="error-message" class="hidden text-red-400"></div>
-                </div>
             </div>
         </div>
 
@@ -89,17 +86,11 @@
             <h2 class="text-2xl font-bold mb-4">Επιβεβαίωση Γεύματος</h2>
             <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
                 <img id="confirmation-image" src="" class="rounded-xl mb-4 w-full">
-                
                 <label for="meal-details" class="block text-sm font-medium text-gray-300 mb-2">Πρόσθετες Λεπτομέρειες (Προαιρετικά)</label>
                 <textarea id="meal-details" class="w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white" rows="3" placeholder="π.χ. χωρίς τηγανητές πατάτες, με έξτρα σως..."></textarea>
             </div>
-            
-            <button id="analyze-confirmation-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mb-2">
-                Ανάλυση Γεύματος
-            </button>
-            <button id="cancel-confirmation-btn" class="w-full text-gray-400 hover:text-white font-bold py-2 px-4 rounded-lg">
-                Άκυρο
-            </button>
+            <button id="analyze-confirmation-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mb-2">Ανάλυση Γεύματος</button>
+            <button id="cancel-confirmation-btn" class="w-full text-gray-400 hover:text-white font-bold py-2 px-4 rounded-lg">Άκυρο</button>
         </div>
 
         <div id="calendar-view" class="app-view max-w-md mx-auto">
@@ -152,6 +143,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
             const headerTitle = document.getElementById('header-title');
             const menuBtn = document.getElementById('menu-btn');
             const sideMenu = document.getElementById('side-menu');
@@ -160,12 +152,11 @@
             const fabScanBtn = document.getElementById('fab-scan-btn');
             const todayTotalCaloriesEl = document.getElementById('today-total-calories');
             const todayLogListEl = document.getElementById('today-log-list');
+            const todayLogListTitleEl = document.getElementById('today-log-list-title');
             const weeklyChartEl = document.getElementById('weekly-chart');
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const captureBtn = document.getElementById('capture-btn');
-            const resultText = document.getElementById('result-text');
-            const loadingIndicator = document.getElementById('loading');
             const cameraActivator = document.getElementById('camera-activator');
             const prevMonthBtn = document.getElementById('prev-month-btn');
             const nextMonthBtn = document.getElementById('next-month-btn');
@@ -183,28 +174,29 @@
             const dialogOkBtn = document.getElementById('dialog-ok-btn');
             const dialogCancelBtn = document.getElementById('dialog-cancel-btn');
             const textAnalyzerFab = document.getElementById('text-analyzer-fab');
-            
-            // *** ΝΕΑ ΣΤΟΙΧΕΙΑ ΓΙΑ ΤΗΝ ΟΘΟΝΗ ΕΠΙΒΕΒΑΙΩΣΗΣ ***
-            const confirmationView = document.getElementById('confirmation-view');
             const confirmationImage = document.getElementById('confirmation-image');
             const mealDetailsInput = document.getElementById('meal-details');
             const analyzeConfirmationBtn = document.getElementById('analyze-confirmation-btn');
             const cancelConfirmationBtn = document.getElementById('cancel-confirmation-btn');
-            let capturedImageData = null; // Προσωρινή αποθήκευση εικόνας
-
+            
+            // State
             let mealData = {};
             let productLibrary = [];
             let currentDate = new Date();
             let mainStream, modalStream;
-            let cameraPermissionGranted = false;
-            let editMode = false;
-            let editProductId = null;
-            let newProductData = {};
+            let capturedImageData = null;
+            let selectedDateStr = null; // Holds 'YYYY-MM-DD' of the selected day in the chart
+
+            // --- Core Functions ---
+
+            function saveData() { localStorage.setItem('mealData', JSON.stringify(mealData)); localStorage.setItem('productLibrary', JSON.stringify(productLibrary)); }
+            function loadData() { mealData = JSON.parse(localStorage.getItem('mealData') || '{}'); productLibrary = JSON.parse(localStorage.getItem('productLibrary') || '[]'); }
+
+            // --- View Switching ---
 
             function switchView(viewId) {
                 if (mainStream && viewId !== 'confirmation-view') { stopCamera(mainStream); mainStream = null; }
                 appViews.forEach(view => view.classList.remove('active'));
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 const newView = document.getElementById(viewId);
                 if(newView) newView.classList.add('active');
                 
@@ -213,28 +205,161 @@
                 textAnalyzerFab.style.display = isScannerRelated ? 'none' : 'flex';
                 sideMenu.classList.add('hidden');
 
-                if (viewId === 'today-view') { headerTitle.textContent = 'Σήμερα'; renderTodayView(); }
-                if (viewId === 'calendar-view') { headerTitle.textContent = 'Το Ημερολόγιό μου'; renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); }
-                if (viewId === 'library-view') { headerTitle.textContent = 'Η Βιβλιοθήκη μου'; renderProductLibrary(); }
-                if (viewId === 'scanner-view') {
-                    headerTitle.textContent = 'Σάρωση Φαγητού';
-                    initializeScannerCamera();
+                const link = document.querySelector(`.nav-link[data-view="${viewId}"]`);
+                if (link) {
+                    headerTitle.textContent = link.textContent;
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
                 }
-                 if (viewId === 'confirmation-view') {
-                    headerTitle.textContent = 'Επιβεβαίωση';
+
+                if (viewId === 'today-view') { headerTitle.textContent = 'Σήμερα'; renderTodayView(); }
+                if (viewId === 'calendar-view') renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
+                if (viewId === 'library-view') renderProductLibrary();
+                if (viewId === 'scanner-view') { headerTitle.textContent = 'Σάρωση Φαγητού'; initializeScannerCamera(); }
+                if (viewId === 'confirmation-view') { headerTitle.textContent = 'Επιβεβαίωση'; }
+            }
+            
+            // --- "Today" View Functions (Now Interactive) ---
+
+            function renderTodayView() {
+                const now = new Date();
+                selectedDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                renderWeeklyChart();
+                updateDayDetails(selectedDateStr);
+            }
+
+            function updateDayDetails(dateStr) {
+                const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
+                todayTotalCaloriesEl.textContent = `${totalCalories} kcal`;
+
+                const dateObj = new Date(dateStr.replace(/-/g, '/'));
+                const todayObj = new Date();
+                todayObj.setHours(0, 0, 0, 0);
+                dateObj.setHours(0, 0, 0, 0);
+
+                if (dateObj.getTime() === todayObj.getTime()) {
+                    todayLogListTitleEl.textContent = 'Γεύματα Ημέρας';
+                } else {
+                    todayLogListTitleEl.textContent = `Γεύματα για ${dateObj.toLocaleDateString('el-GR', { day: '2-digit', month: '2-digit' })}`;
+                }
+                renderMealList(todayLogListEl, dateStr);
+            }
+
+            function renderWeeklyChart() {
+                weeklyChartEl.innerHTML = '';
+                const last7DaysData = [];
+                let maxCalories = 0;
+
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
+                    if (totalCalories > maxCalories) maxCalories = totalCalories;
+                    last7DaysData.push({ dateStr: dateStr, label: d.toLocaleDateString('el-GR', { weekday: 'short' }), calories: totalCalories });
+                }
+                if (maxCalories === 0) maxCalories = 2000;
+
+                last7DaysData.forEach(day => {
+                    const barHeight = Math.max(1, (day.calories / maxCalories) * 100);
+                    const barColor = day.dateStr === selectedDateStr ? 'bg-cyan-400' : 'bg-gray-600';
+                    
+                    const dayWrapper = document.createElement('div');
+                    dayWrapper.className = 'chart-day-wrapper flex-1 flex flex-col items-center justify-end h-full cursor-pointer p-1';
+                    dayWrapper.dataset.date = day.dateStr;
+
+                    dayWrapper.innerHTML = `
+                        <div class="text-xs text-gray-400 mb-1 h-4">${day.calories > 0 ? day.calories : ''}</div>
+                        <div class="flex-grow flex items-end w-full"><div class="${barColor} w-full rounded-t-md" style="height: ${barHeight}%" title="${day.calories} kcal"></div></div>
+                        <div class="text-xs mt-1">${day.label}</div>
+                    `;
+                    weeklyChartEl.appendChild(dayWrapper);
+                });
+            }
+
+            // --- Meal List and Entry Management ---
+
+            function renderMealList(listElement, dateStr) {
+                const dayMeals = mealData[dateStr] || [];
+                listElement.innerHTML = '';
+                if (dayMeals.length === 0) { listElement.innerHTML = `<li class="text-gray-500 text-center p-8">Δεν υπάρχουν γεύματα. Πατήστε το '+' για να προσθέσετε.</li>`; }
+                else {
+                    dayMeals.sort((a,b) => b.time.localeCompare(a.time));
+                    dayMeals.forEach(meal => {
+                        const li = document.createElement('li');
+                        li.className = 'bg-gray-700 p-3 rounded-lg flex justify-between items-center';
+                        li.innerHTML = `<div><p class="font-semibold">${meal.name}</p><p class="text-sm text-gray-400">${meal.time}</p></div><div class="flex items-center"><strong class="text-cyan-400 mr-4">${meal.calories} kcal</strong><button class="delete-meal-btn" data-date="${dateStr}" data-time="${meal.time}"><svg class="w-6 h-6 text-red-500 hover:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg></button></div>`;
+                        listElement.appendChild(li);
+                    });
                 }
             }
+
+            function addEntryToHistory(entry) {
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const newMeal = { ...entry, time: timeStr, id: `meal_${Date.now()}`};
+                if (!mealData[dateStr]) mealData[dateStr] = [];
+                mealData[dateStr].push(newMeal);
+                saveData();
+                showCustomAlert(`"${entry.name}" προστέθηκε!`);
+                
+                const currentView = document.querySelector('.app-view.active').id;
+                if (currentView === 'today-view') { renderTodayView(); }
+            }
+
+            function deleteMealEntry(date, time) {
+                if (mealData[date]) {
+                    mealData[date] = mealData[date].filter(meal => meal.time !== time);
+                    if (mealData[date].length === 0) delete mealData[date];
+                    saveData();
+                    const currentView = document.querySelector('.app-view.active').id;
+                    if (currentView === 'today-view') {
+                        renderWeeklyChart();
+                        updateDayDetails(selectedDateStr);
+                    }
+                    if (currentView === 'daily-log-view') renderDailyLog(date);
+                }
+            }
+
+            // --- Camera and Scanner Flow ---
+            
+            async function startCamera(videoElement, activatorElement = null) {
+                try {
+                    if (videoElement.srcObject) stopCamera(videoElement.srcObject);
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    videoElement.srcObject = stream;
+                    if (activatorElement) activatorElement.classList.add('hidden');
+                    videoElement.classList.remove('hidden');
+                    if (videoElement.id === 'video') { captureBtn.disabled = false; document.getElementById('scan-instruction').textContent = 'Σαρώστε ένα φαγητό...'; }
+                    return stream;
+                } catch (err) {
+                    const message = "Η πρόσβαση στην κάμερα απέτυχε. Ελέγξτε τις άδειες του browser και ανανεώστε τη σελίδα.";
+                    if (activatorElement) {
+                         activatorElement.innerHTML = `<div class="p-4 text-center"><p class="text-red-400">${message}</p><button id="retry-camera-btn" class="mt-4 bg-blue-600 px-4 py-2 rounded-lg">Δοκιμάστε ξανά</button></div>`;
+                         document.getElementById('retry-camera-btn').addEventListener('click', initializeScannerCamera);
+                    } else { await showCustomAlert(message); }
+                    return null;
+                }
+            }
+
+            function stopCamera(stream) { if (stream) stream.getTracks().forEach(track => track.stop()); }
+            
+            async function initializeScannerCamera() {
+                const activator = document.getElementById('camera-activator');
+                activator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`;
+                mainStream = await startCamera(video, activator);
+            }
+
+            // --- Event Listeners ---
+            
             menuBtn.addEventListener('click', () => sideMenu.classList.toggle('hidden'));
             sideMenu.addEventListener('click', (e) => { if (e.target === sideMenu) sideMenu.classList.add('hidden'); });
             navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); switchView(e.target.dataset.view); }); });
             fabScanBtn.addEventListener('click', () => switchView('scanner-view'));
-            document.body.addEventListener('click', e => { 
-                if (e.target.closest('.back-to-calendar-btn')) switchView('calendar-view');
-                if (e.target.closest('.back-to-today-btn')) switchView('today-view');
-            });
             textAnalyzerFab.addEventListener('click', () => textAnalyzerModal.classList.remove('hidden'));
             document.querySelector('.text-analyzer-cancel-btn').addEventListener('click', () => textAnalyzerModal.classList.add('hidden'));
             document.getElementById('analyze-text-btn').addEventListener('click', analyzeMealFromText);
+            cameraActivator.addEventListener('click', initializeScannerCamera);
             
             document.body.addEventListener('click', async (e) => {
                 if (e.target.closest('.delete-meal-btn')) {
@@ -246,37 +371,115 @@
                         deleteMealEntry(date, time);
                     }
                 }
+                if (e.target.closest('.back-to-calendar-btn')) switchView('calendar-view');
+                if (e.target.closest('.back-to-today-btn')) switchView('today-view');
             });
 
-            function saveData() { localStorage.setItem('mealData', JSON.stringify(mealData)); localStorage.setItem('productLibrary', JSON.stringify(productLibrary)); }
-            function loadData() { mealData = JSON.parse(localStorage.getItem('mealData') || '{}'); productLibrary = JSON.parse(localStorage.getItem('productLibrary') || '[]'); }
-
-            function renderTodayView() {
-                const now = new Date();
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                renderMealList(todayLogListEl, dateStr);
-                const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
-                todayTotalCaloriesEl.textContent = `${totalCalories} kcal`;
-                renderWeeklyChart();
-            }
-            
-            function renderWeeklyChart() {
-                weeklyChartEl.innerHTML = '';
-                const last7DaysData = []; let maxCalories = 0;
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date(); d.setDate(d.getDate() - i);
-                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
-                    if (totalCalories > maxCalories) maxCalories = totalCalories;
-                    last7DaysData.push({ label: d.toLocaleDateString('el-GR', { weekday: 'short' }), calories: totalCalories, isToday: i === 0 });
+            weeklyChartEl.addEventListener('click', (e) => {
+                const dayWrapper = e.target.closest('.chart-day-wrapper');
+                if (dayWrapper && dayWrapper.dataset.date) {
+                    selectedDateStr = dayWrapper.dataset.date;
+                    renderWeeklyChart();
+                    updateDayDetails(selectedDateStr);
                 }
-                if (maxCalories === 0) maxCalories = 2000;
-                last7DaysData.forEach(day => {
-                    const barHeight = Math.max(1, (day.calories / maxCalories) * 100);
-                    const barColor = day.isToday ? 'bg-cyan-400' : 'bg-gray-600';
-                    weeklyChartEl.innerHTML += `<div class="flex flex-col items-center justify-end h-full"><div class="${barColor} w-full rounded-t-md" style="height: ${barHeight}%" title="${day.calories} kcal"></div><div class="text-xs mt-1">${day.label}</div></div>`;
-                });
+            });
+
+            captureBtn.addEventListener('click', () => {
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                capturedImageData = canvas.toDataURL('image/png');
+                confirmationImage.src = capturedImageData;
+                switchView('confirmation-view');
+            });
+
+            analyzeConfirmationBtn.addEventListener('click', async () => {
+                if (!capturedImageData) return;
+                switchView('today-view');
+                showCustomAlert('Έξυπνη ανάλυση σε εξέλιξη...');
+                const base64Only = capturedImageData.split(',')[1];
+                const userNotes = mealDetailsInput.value.trim();
+                try {
+                    let bestMatch = null;
+                    const keywordsPrompt = `Describe the main food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings.`;
+                    const scannedKeywords = await callAI(keywordsPrompt, base64Only);
+                    bestMatch = findBestMatch(scannedKeywords);
+
+                    if (bestMatch) {
+                        const finalCalories = Math.round((bestMatch.weight / 100) * bestMatch.caloriesPer100g);
+                        addEntryToHistory({ name: bestMatch.name, weight: bestMatch.weight, calories: finalCalories });
+                    } else {
+                        const genericPrompt = `Analyze the image. Use the user's notes for context: "${userNotes}". If a 1 Euro coin is visible, use its known diameter (23.25mm) as a scale reference to estimate the food's real-world size, and then its weight and total calories. If no coin is visible, or if multiple distinct items are present, identify each item, count them, estimate the calories per item, and sum them up. Respond with {"food_name_greek": "Name", "calories": 123, "weight": 150}. If you cannot identify food, respond with {}.`;
+                        const aiResponse = await callAI(genericPrompt, base64Only);
+                        if (aiResponse.calories) {
+                            addEntryToHistory({ name: aiResponse.food_name_greek, weight: aiResponse.weight, calories: aiResponse.calories });
+                        } else { throw new Error("Could not identify food."); }
+                    }
+                } catch (e) {
+                    showCustomAlert('Απέτυχε η ανάλυση. Δοκιμάστε ξανά με πιο καθαρή εικόνα.');
+                    console.error(e);
+                } finally {
+                    capturedImageData = null;
+                    mealDetailsInput.value = '';
+                }
+            });
+
+            cancelConfirmationBtn.addEventListener('click', () => {
+                capturedImageData = null;
+                mealDetailsInput.value = '';
+                switchView('scanner-view');
+            });
+            
+            // --- AI & Analysis Functions ---
+            
+            async function callAI(prompt, base64ImageData, expectJson = true) {
+                const parts = [{ text: prompt }];
+                if (base64ImageData) { parts.push({ inlineData: { mimeType: "image/png", data: base64ImageData } }); }
+                const payload = { contents: [{ role: "user", parts: parts }]};
+                if(expectJson) payload.generationConfig = { responseMimeType: "application/json" };
+                const apiKey = "AIzaSyCc3SAooOx7gLDPcWZeKrpCC-iBDDpq1Gc";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                const result = await response.json();
+                const aiResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!aiResponseText) throw new Error("No response from AI.");
+                return expectJson ? JSON.parse(aiResponseText) : aiResponseText;
             }
+
+            function findBestMatch(scannedKeywords) {
+                let bestMatch = null;
+                let maxMatchCount = 0;
+                if (productLibrary.length > 0 && Array.isArray(scannedKeywords)) {
+                    for (const product of productLibrary) {
+                        const libraryKeywords = product.keywords || [];
+                        const matchCount = scannedKeywords.filter(keyword => libraryKeywords.includes(keyword)).length;
+                        if (matchCount > maxMatchCount && matchCount >= 2) { maxMatchCount = matchCount; bestMatch = product; }
+                    }
+                }
+                return bestMatch;
+            }
+
+            async function analyzeMealFromText() {
+                const description = document.getElementById('text-analyzer-input').value;
+                if (!description.trim()) { await showCustomAlert('Παρακαλώ εισάγετε μια περιγραφή.'); return; }
+                const btn = document.getElementById('analyze-text-btn');
+                btn.textContent = 'Ανάλυση...'; btn.disabled = true;
+                const prompt = `You are a nutrition expert. The user will provide a meal description in Greek. Your task is to analyze the description, identify the ingredients, estimate their quantities for a typical serving, and calculate the total calories. The user input is: "${description}". Respond with ONLY a valid JSON object with the following structure: {"meal_name": "A summary name for the meal in Greek", "total_calories": a number, "estimated_weight": a number representing total grams}.`;
+                try {
+                    const aiResponse = await callAI(prompt, null, true);
+                    const { meal_name, total_calories, estimated_weight } = aiResponse;
+                    if (!meal_name || !total_calories || !estimated_weight) throw new Error("Invalid response structure from AI.");
+                    addEntryToHistory({ name: meal_name, weight: estimated_weight, calories: total_calories });
+                    document.getElementById('text-analyzer-modal').classList.add('hidden');
+                    document.getElementById('text-analyzer-input').value = '';
+                    switchView('today-view');
+                } catch (e) { await showCustomAlert('Απέτυχε η ανάλυση του γεύματος. Προσπαθήστε να είστε πιο περιγραφικός.'); console.error("Text Analysis Error:", e); } 
+                finally { btn.textContent = 'Ανάλυση & Προσθήκη'; btn.disabled = false; }
+            }
+
+            // --- Calendar and Daily Log Functions ---
 
             function renderCalendar(year, month) {
                 currentDate = new Date(year, month, 1);
@@ -309,152 +512,8 @@
                 const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
                 dailyLogTotalEl.textContent = `${totalCalories} kcal`;
             }
-            
-            function renderMealList(listElement, dateStr) {
-                const dayMeals = mealData[dateStr] || [];
-                listElement.innerHTML = '';
-                if (dayMeals.length === 0) { listElement.innerHTML = `<li class="text-gray-500 text-center p-8">Δεν υπάρχουν γεύματα. Πατήστε το '+' για να προσθέσετε.</li>`; }
-                else {
-                    dayMeals.sort((a,b) => b.time.localeCompare(a.time));
-                    dayMeals.forEach(meal => {
-                        const li = document.createElement('li');
-                        li.className = 'bg-gray-700 p-3 rounded-lg flex justify-between items-center';
-                        li.innerHTML = `<div><p class="font-semibold">${meal.name}</p><p class="text-sm text-gray-400">${meal.time}</p></div><div class="flex items-center"><strong class="text-cyan-400 mr-4">${meal.calories} kcal</strong><button class="delete-meal-btn" data-date="${dateStr}" data-time="${meal.time}"><svg class="w-6 h-6 text-red-500 hover:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg></button></div>`;
-                        listElement.appendChild(li);
-                    });
-                }
-            }
 
-            function deleteMealEntry(date, time) {
-                if (mealData[date]) {
-                    mealData[date] = mealData[date].filter(meal => meal.time !== time);
-                    if (mealData[date].length === 0) delete mealData[date];
-                    saveData();
-                    const currentView = document.querySelector('.app-view.active').id;
-                    if (currentView === 'today-view') renderTodayView();
-                    if (currentView === 'daily-log-view') renderDailyLog(date);
-                }
-            }
-
-            async function startCamera(videoElement, activatorElement = null) {
-                try {
-                    if (videoElement.srcObject) stopCamera(videoElement.srcObject);
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    videoElement.srcObject = stream;
-                    if (activatorElement) activatorElement.classList.add('hidden');
-                    videoElement.classList.remove('hidden');
-                    if (videoElement.id === 'video') { captureBtn.disabled = false; document.getElementById('scan-instruction').textContent = 'Σαρώστε ένα φαγητό...'; }
-                    return stream;
-                } catch (err) {
-                    cameraPermissionGranted = false;
-                    const message = "Η πρόσβαση στην κάμερα απέτυχε. Ελέγξτε τις άδειες του browser και ανανεώστε τη σελίδα.";
-                    if (activatorElement) {
-                         const activatorContent = activatorElement;
-                         activatorContent.innerHTML = `<div class="p-4 text-center"><p class="text-red-400">${message}</p><button id="retry-camera-btn" class="mt-4 bg-blue-600 px-4 py-2 rounded-lg">Δοκιμάστε ξανά</button></div>`;
-                         document.getElementById('retry-camera-btn').addEventListener('click', initializeScannerCamera);
-                    } else { await showCustomAlert(message); }
-                    return null;
-                }
-            }
-            function stopCamera(stream) { if (stream) stream.getTracks().forEach(track => track.stop()); }
-            
-            async function initializeScannerCamera() {
-                const activator = document.getElementById('camera-activator');
-                activator.innerHTML = `<div class="spinner w-8 h-8 rounded-full border-4 border-gray-500"></div>`;
-                mainStream = await startCamera(video, activator);
-                if (mainStream) cameraPermissionGranted = true;
-            }
-            cameraActivator.addEventListener('click', initializeScannerCamera);
-
-            // *** ΑΛΛΑΓΗ ΛΟΓΙΚΗΣ: Το captureBtn πλέον οδηγεί στην οθόνη επιβεβαίωσης ***
-            captureBtn.addEventListener('click', () => {
-                const context = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                capturedImageData = canvas.toDataURL('image/png');
-                confirmationImage.src = capturedImageData;
-
-                switchView('confirmation-view');
-            });
-
-            // *** ΝΕΑ ΛΟΓΙΚΗ: Τα κουμπιά της οθόνης επιβεβαίωσης αναλαμβάνουν την ανάλυση ***
-            analyzeConfirmationBtn.addEventListener('click', async () => {
-                if (!capturedImageData) return;
-
-                switchView('today-view');
-                showCustomAlert('Έξυπνη ανάλυση σε εξέλιξη...');
-
-                const base64Only = capturedImageData.split(',')[1];
-                const userNotes = mealDetailsInput.value.trim();
-                
-                try {
-                    let bestMatch = null;
-                    const keywordsPrompt = `Describe the main food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings.`;
-                    const scannedKeywords = await callAI(keywordsPrompt, base64Only);
-                    bestMatch = findBestMatch(scannedKeywords);
-
-                    if (bestMatch) {
-                        const finalCalories = Math.round((bestMatch.weight / 100) * bestMatch.caloriesPer100g);
-                        addEntryToHistory({ name: bestMatch.name, weight: bestMatch.weight, calories: finalCalories });
-                    } else {
-                        // ΒΕΛΤΙΩΜΕΝΟ PROMPT
-                        const genericPrompt = `Analyze the image. Use the user's notes for context: "${userNotes}". If a 1 Euro coin is visible, use its known diameter (23.25mm) as a scale reference to estimate the food's real-world size, and then its weight and total calories. If no coin is visible, or if multiple distinct items are present, identify each item, count them, estimate the calories per item, and sum them up. Respond with {"food_name_greek": "Name", "calories": 123, "weight": 150}. If you cannot identify food, respond with {}.`;
-                        
-                        const aiResponse = await callAI(genericPrompt, base64Only);
-                        if (aiResponse.calories) {
-                            addEntryToHistory({ name: aiResponse.food_name_greek, weight: aiResponse.weight, calories: aiResponse.calories });
-                        } else {
-                            throw new Error("Could not identify food.");
-                        }
-                    }
-                } catch (e) {
-                    showCustomAlert('Απέτυχε η ανάλυση. Δοκιμάστε ξανά με πιο καθαρή εικόνα.');
-                    console.error(e);
-                } finally {
-                    capturedImageData = null;
-                    mealDetailsInput.value = '';
-                }
-            });
-
-            cancelConfirmationBtn.addEventListener('click', () => {
-                capturedImageData = null;
-                mealDetailsInput.value = '';
-                switchView('scanner-view');
-            });
-            
-            function findBestMatch(scannedKeywords) {
-                let bestMatch = null;
-                let maxMatchCount = 0;
-                if (productLibrary.length > 0 && Array.isArray(scannedKeywords)) {
-                    for (const product of productLibrary) {
-                        const libraryKeywords = product.keywords || [];
-                        const matchCount = scannedKeywords.filter(keyword => libraryKeywords.includes(keyword)).length;
-                        if (matchCount > maxMatchCount && matchCount >= 2) { maxMatchCount = matchCount; bestMatch = product; }
-                    }
-                }
-                return bestMatch;
-            }
-
-            function addEntryToHistory(entry) {
-                const now = new Date();
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                const newMeal = { ...entry, time: timeStr };
-                if (!mealData[dateStr]) mealData[dateStr] = [];
-                mealData[dateStr].push(newMeal);
-                saveData();
-                showCustomAlert(`"${entry.name}" προστέθηκε στη σημερινή καταγραφή!`);
-                renderTodayView(); // Ανανέωση της λίστας αμέσως
-            }
-            
-            function showLoading(text) { document.getElementById('loading-text').textContent = text; document.getElementById('result-text').classList.add('hidden'); document.getElementById('error-message').classList.add('hidden'); loadingIndicator.classList.remove('hidden'); }
-            function hideLoading() { loadingIndicator.classList.add('hidden'); }
-            function showError(message) { document.getElementById('error-message').textContent = message; document.getElementById('error-message').classList.remove('hidden'); hideLoading(); }
-            function showCustomAlert(message, isConfirm = false) { return new Promise(resolve => { customDialog.classList.remove('hidden'); customDialog.classList.add('flex'); dialogMessage.textContent = message; dialogOkBtn.onclick = () => { customDialog.classList.add('hidden'); customDialog.classList.remove('flex'); resolve(true); }; dialogCancelBtn.onclick = () => { customDialog.classList.add('hidden'); customDialog.classList.remove('flex'); resolve(false); }; dialogCancelBtn.style.display = isConfirm ? 'inline-block' : 'none'; }); }
-            
-            addProductFromLibraryBtn.addEventListener('click', () => openAddModal(false));
+            // --- Library Functions ---
             
             function renderProductLibrary() {
                 productLibraryList.innerHTML = '';
@@ -555,71 +614,23 @@
                         productLibrary.push({ id: `prod_${Date.now()}`, name, caloriesPer100g: calories, weight, imageBase64: newProductData.imageBase64, keywords: newProductData.keywords });
                         await showCustomAlert(`Το προϊόν "${name}" αποθηκεύτηκε!`);
                     }
-                    saveData(); closeModal(); switchView('library-view');
+                    saveData(); closeModal(); renderProductLibrary();
                 } catch(e) { await showCustomAlert('Απέτυχε η δημιουργία οπτικής περιγραφής. Το προϊόν δεν αποθηκεύτηκε.'); } 
                 finally { btn.textContent = "Αποθήκευση"; btn.disabled = false; }
             }
 
-            async function callAI(prompt, base64ImageData, expectJson = true) {
-                const parts = [{ text: prompt }];
-                if (base64ImageData) {
-                    parts.push({ inlineData: { mimeType: "image/png", data: base64ImageData } });
-                }
-                const payload = { contents: [{ role: "user", parts: parts }]};
-                if(expectJson) payload.generationConfig = { responseMimeType: "application/json" };
-                const apiKey = "AIzaSyCc3SAooOx7gLDPcWZeKrpCC-iBDDpq1Gc";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                const result = await response.json();
-                const aiResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!aiResponseText) throw new Error("No response from AI.");
-                return expectJson ? JSON.parse(aiResponseText) : aiResponseText;
-            }
-            
-            async function analyzeMealFromText() {
-                const description = document.getElementById('text-analyzer-input').value;
-                if (!description.trim()) { await showCustomAlert('Παρακαλώ εισάγετε μια περιγραφή.'); return; }
-                const btn = document.getElementById('analyze-text-btn');
-                btn.textContent = 'Ανάλυση...'; btn.disabled = true;
-                const prompt = `You are a nutrition expert. The user will provide a meal description in Greek. Your task is to analyze the description, identify the ingredients, estimate their quantities for a typical serving, and calculate the total calories. The user input is: "${description}". Respond with ONLY a valid JSON object with the following structure: {"meal_name": "A summary name for the meal in Greek", "total_calories": a number, "estimated_weight": a number representing total grams}.`;
-                try {
-                    const aiResponse = await callAI(prompt, null, true);
-                    const { meal_name, total_calories, estimated_weight } = aiResponse;
-                    if (!meal_name || !total_calories || !estimated_weight) throw new Error("Invalid response structure from AI.");
-                    addEntryToHistory({ name: meal_name, weight: estimated_weight, calories: total_calories });
-                    document.getElementById('text-analyzer-modal').classList.add('hidden');
-                    document.getElementById('text-analyzer-input').value = '';
-                    switchView('today-view');
-                } catch (e) { await showCustomAlert('Απέτυχε η ανάλυση του γεύματος. Προσπαθήστε να είστε πιο περιγραφικός.'); console.error("Text Analysis Error:", e); } 
-                finally { btn.textContent = 'Ανάλυση & Προσθήκη'; btn.disabled = false; }
+            // --- Utility Functions ---
+            function showCustomAlert(message, isConfirm = false) {
+                return new Promise(resolve => {
+                    dialogMessage.textContent = message;
+                    dialogOkBtn.onclick = () => { customDialog.classList.add('hidden'); resolve(true); };
+                    dialogCancelBtn.onclick = () => { customDialog.classList.add('hidden'); resolve(false); };
+                    dialogCancelBtn.style.display = isConfirm ? 'inline-block' : 'none';
+                    customDialog.classList.remove('hidden');
+                });
             }
 
-            async function getWeeklyAnalysis() {
-                const btn = document.getElementById('weekly-analysis-btn');
-                btn.textContent = 'Γίνεται ανάλυση...'; btn.disabled = true;
-                const last7DaysData = {};
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    if(mealData[dateStr]) last7DaysData[dateStr] = mealData[dateStr];
-                }
-                if (Object.keys(last7DaysData).length === 0) {
-                    await showCustomAlert('Δεν υπάρχουν δεδομένα για τις τελευταίες 7 ημέρες για να γίνει ανάλυση.');
-                    btn.textContent = '✨ Λήψη Εβδομαδιαίας Ανάλυσης'; btn.disabled = false;
-                    return;
-                }
-                const prompt = `You are a helpful and encouraging nutrition coach. Here is a JSON object representing the user's meal log for the last 7 days: ${JSON.stringify(last7DaysData)}. Analyze this data. Provide a short, friendly summary of their week and one or two simple, actionable tips for improvement, in Greek. Keep the tone positive. Format the response with Markdown, using ** for bold and * for italics. Start with '### ✨ Εβδομαδιαία Ανάλυση ✨'.`;
-                try {
-                    const analysisText = await callAI(prompt, null, false);
-                    await showCustomAlert(analysisText.replace(/###/g, '<h3>').replace(/✨/g, '</h3>'));
-                } catch(e) { await showCustomAlert('Παρουσιάστηκε σφάλμα κατά τη δημιουργία της ανάλυσης.'); console.error("Weekly Analysis Error:", e); } 
-                finally { btn.textContent = '✨ Λήψη Εβδομαδιαίας Ανάλυσης'; btn.disabled = false; }
-            }
-            
-            document.body.addEventListener('click', e => { if (e.target.matches('#add-product-from-library-btn')) openAddModal(false); });
-            
+            // --- Initial Load ---
             loadData();
             switchView('today-view');
         });
