@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v12.4</title>
+    <title>AI Μετρητής Θερμίδων v12.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -374,6 +374,7 @@
             document.querySelector('.text-analyzer-cancel-btn').addEventListener('click', () => textAnalyzerModal.classList.add('hidden'));
             document.getElementById('analyze-text-btn').addEventListener('click', analyzeMealFromText);
             cameraActivator.addEventListener('click', initializeScannerCamera);
+            addProductFromLibraryBtn.addEventListener('click', () => openAddModal(false)); // *** ΔΙΟΡΘΩΣΗ: Επαναφορά του listener ***
             
             document.body.addEventListener('click', async (e) => {
                 if (e.target.closest('.delete-meal-btn')) {
