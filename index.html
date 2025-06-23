@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Μετρητής Θερμίδων v7.12</title>
+    <title>AI Μετρητής Θερμίδων v12.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +35,6 @@
 </head>
 <body class="bg-gray-900 text-white">
 
-    <!-- Header with Menu -->
     <header class="bg-gray-800 p-4 flex items-center justify-between sticky top-0 z-40">
         <h1 id="header-title" class="text-xl font-bold text-cyan-400">Σήμερα</h1>
         <button id="menu-btn">
@@ -43,7 +42,6 @@
         </button>
     </header>
 
-    <!-- Side Menu -->
     <div id="side-menu" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
         <nav class="bg-gray-800 w-64 h-full p-4 space-y-2">
             <a href="#" class="nav-link block p-2 rounded" data-view="today-view">Σήμερα</a>
@@ -53,7 +51,6 @@
     </div>
 
     <main class="p-4">
-        <!-- Today View (New Default) -->
         <div id="today-view" class="app-view active max-w-md mx-auto">
             <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
                 <h2 class="text-lg font-semibold text-gray-300 mb-4">Επισκόπηση 7 Ημερών</h2>
@@ -67,7 +64,6 @@
             <ul id="today-log-list" class="space-y-2 pb-24"></ul>
         </div>
         
-        <!-- Scanner View -->
         <div id="scanner-view" class="app-view max-w-md mx-auto">
             <button class="back-to-today-btn text-cyan-400 mb-4">&lt; Επιστροφή στο Σήμερα</button>
              <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
@@ -89,14 +85,29 @@
             </div>
         </div>
 
-        <!-- Calendar View -->
+        <div id="confirmation-view" class="app-view max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Επιβεβαίωση Γεύματος</h2>
+            <div class="bg-gray-800 rounded-3xl shadow-2xl p-6 mb-4">
+                <img id="confirmation-image" src="" class="rounded-xl mb-4 w-full">
+                
+                <label for="meal-details" class="block text-sm font-medium text-gray-300 mb-2">Πρόσθετες Λεπτομέρειες (Προαιρετικά)</label>
+                <textarea id="meal-details" class="w-full bg-gray-700 border-gray-600 rounded-md shadow-sm p-2 text-white" rows="3" placeholder="π.χ. χωρίς τηγανητές πατάτες, με έξτρα σως..."></textarea>
+            </div>
+            
+            <button id="analyze-confirmation-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg mb-2">
+                Ανάλυση Γεύματος
+            </button>
+            <button id="cancel-confirmation-btn" class="w-full text-gray-400 hover:text-white font-bold py-2 px-4 rounded-lg">
+                Άκυρο
+            </button>
+        </div>
+
         <div id="calendar-view" class="app-view max-w-md mx-auto">
             <div class="flex justify-between items-center mb-4"><button id="prev-month-btn" class="p-2 rounded-full bg-gray-700">&lt;</button><h2 id="month-year-title" class="text-xl font-semibold"></h2><button id="next-month-btn" class="p-2 rounded-full bg-gray-700">&gt;</button></div>
             <div class="grid calendar-grid text-center font-semibold text-xs text-gray-400 mb-2"><div>ΔΕΥ</div><div>ΤΡΙ</div><div>ΤΕΤ</div><div>ΠΕΜ</div><div>ΠΑΡ</div><div>ΣΑΒ</div><div>ΚΥΡ</div></div>
             <div id="calendar-body" class="grid calendar-grid gap-1"></div>
         </div>
         
-        <!-- Daily Log View -->
         <div id="daily-log-view" class="app-view max-w-md mx-auto">
              <button class="back-to-calendar-btn text-cyan-400 mb-4">&lt; Επιστροφή στο Ημερολόγιο</button>
              <h2 id="daily-log-date" class="text-2xl font-bold mb-4"></h2>
@@ -104,22 +115,19 @@
              <div class="bg-gray-700 p-4 rounded-lg text-right"><p class="text-gray-400">Σύνολο Ημέρας:</p><p id="daily-log-total" class="text-2xl font-bold text-cyan-400"></p></div>
         </div>
         
-        <!-- Library View -->
         <div id="library-view" class="app-view max-w-md mx-auto">
              <button id="add-product-from-library-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg mb-4">+ Προσθήκη Νέου Προϊόντος</button>
             <ul id="product-library-list" class="space-y-3 pb-24"></ul>
         </div>
     </main>
 
-    <!-- Floating Action Buttons -->
     <button id="text-analyzer-fab" class="fab left-6 w-14 h-14 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
     </button>
-    <button id="fab-scan-btn" class="fab right-6 w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-indigo-700">
+    <button id="fab-scan-btn" class="fab right-6 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
     </button>
 
-    <!-- Modals -->
     <div id="add-product-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 flex flex-col">
             <div id="modal-video-container" class="mb-4"><video id="modal-video" class="rounded-lg" playsinline autoplay muted></video></div>
@@ -175,6 +183,14 @@
             const dialogOkBtn = document.getElementById('dialog-ok-btn');
             const dialogCancelBtn = document.getElementById('dialog-cancel-btn');
             const textAnalyzerFab = document.getElementById('text-analyzer-fab');
+            
+            // *** ΝΕΑ ΣΤΟΙΧΕΙΑ ΓΙΑ ΤΗΝ ΟΘΟΝΗ ΕΠΙΒΕΒΑΙΩΣΗΣ ***
+            const confirmationView = document.getElementById('confirmation-view');
+            const confirmationImage = document.getElementById('confirmation-image');
+            const mealDetailsInput = document.getElementById('meal-details');
+            const analyzeConfirmationBtn = document.getElementById('analyze-confirmation-btn');
+            const cancelConfirmationBtn = document.getElementById('cancel-confirmation-btn');
+            let capturedImageData = null; // Προσωρινή αποθήκευση εικόνας
 
             let mealData = {};
             let productLibrary = [];
@@ -186,23 +202,26 @@
             let newProductData = {};
 
             function switchView(viewId) {
-                if (mainStream) { stopCamera(mainStream); mainStream = null; }
+                if (mainStream && viewId !== 'confirmation-view') { stopCamera(mainStream); mainStream = null; }
                 appViews.forEach(view => view.classList.remove('active'));
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 const newView = document.getElementById(viewId);
                 if(newView) newView.classList.add('active');
-                const link = document.querySelector(`.nav-link[data-view="${viewId}"]`);
-                if(link) { headerTitle.textContent = link.textContent; link.classList.add('active'); }
-                const isScannerView = viewId === 'scanner-view';
-                fabScanBtn.style.display = isScannerView ? 'none' : 'flex';
-                textAnalyzerFab.style.display = isScannerView ? 'none' : 'flex';
+                
+                const isScannerRelated = viewId === 'scanner-view' || viewId === 'confirmation-view';
+                fabScanBtn.style.display = isScannerRelated ? 'none' : 'flex';
+                textAnalyzerFab.style.display = isScannerRelated ? 'none' : 'flex';
                 sideMenu.classList.add('hidden');
-                if (viewId === 'today-view') renderTodayView();
-                if (viewId === 'calendar-view') renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
-                if (viewId === 'library-view') renderProductLibrary();
+
+                if (viewId === 'today-view') { headerTitle.textContent = 'Σήμερα'; renderTodayView(); }
+                if (viewId === 'calendar-view') { headerTitle.textContent = 'Το Ημερολόγιό μου'; renderCalendar(currentDate.getFullYear(), currentDate.getMonth()); }
+                if (viewId === 'library-view') { headerTitle.textContent = 'Η Βιβλιοθήκη μου'; renderProductLibrary(); }
                 if (viewId === 'scanner-view') {
                     headerTitle.textContent = 'Σάρωση Φαγητού';
                     initializeScannerCamera();
+                }
+                 if (viewId === 'confirmation-view') {
+                    headerTitle.textContent = 'Επιβεβαίωση';
                 }
             }
             menuBtn.addEventListener('click', () => sideMenu.classList.toggle('hidden'));
@@ -347,41 +366,68 @@
             }
             cameraActivator.addEventListener('click', initializeScannerCamera);
 
-            captureBtn.addEventListener('click', async () => {
-                showLoading('Έξυπνη ανάλυση...');
+            // *** ΑΛΛΑΓΗ ΛΟΓΙΚΗΣ: Το captureBtn πλέον οδηγεί στην οθόνη επιβεβαίωσης ***
+            captureBtn.addEventListener('click', () => {
                 const context = canvas.getContext('2d');
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const base64ImageData = canvas.toDataURL('image/png').split(',')[1];
+
+                capturedImageData = canvas.toDataURL('image/png');
+                confirmationImage.src = capturedImageData;
+
+                switchView('confirmation-view');
+            });
+
+            // *** ΝΕΑ ΛΟΓΙΚΗ: Τα κουμπιά της οθόνης επιβεβαίωσης αναλαμβάνουν την ανάλυση ***
+            analyzeConfirmationBtn.addEventListener('click', async () => {
+                if (!capturedImageData) return;
+
+                switchView('today-view');
+                showCustomAlert('Έξυπνη ανάλυση σε εξέλιξη...');
+
+                const base64Only = capturedImageData.split(',')[1];
+                const userNotes = mealDetailsInput.value.trim();
                 
                 try {
-                    const keywordsPrompt = `Describe the main food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings. Example: ["banana", "fruit", "yellow"]`;
-                    const scannedKeywords = await callAI(keywordsPrompt, base64ImageData);
-                    let bestMatch = findBestMatch(scannedKeywords);
+                    let bestMatch = null;
+                    const keywordsPrompt = `Describe the main food item in this image with 3-5 simple keywords in English. Respond with ONLY a valid JSON array of strings.`;
+                    const scannedKeywords = await callAI(keywordsPrompt, base64Only);
+                    bestMatch = findBestMatch(scannedKeywords);
 
                     if (bestMatch) {
                         const finalCalories = Math.round((bestMatch.weight / 100) * bestMatch.caloriesPer100g);
                         addEntryToHistory({ name: bestMatch.name, weight: bestMatch.weight, calories: finalCalories });
                     } else {
-                        showLoading('Εκτίμηση θερμίδων...');
-                        const genericPrompt = `Analyze the image. First, check if a 1 Euro coin is clearly visible next to the food. If YES, estimate the food's weight in grams and respond with {"analysis_type": "coin", "food_name_greek": "Name", "calories_per_100g": 123, "estimated_weight_g": 123}. If NO coin is visible, identify the food and provide calories for a typical medium serving and respond with {"analysis_type": "average", "food_name_greek": "Name", "calories": 123, "weight": 150}. If you cannot identify food, respond with {}.`;
-                        const aiResponse = await callAI(genericPrompt, base64ImageData);
-                        if (aiResponse.analysis_type === 'coin') {
-                            const { food_name_greek, calories_per_100g, estimated_weight_g } = aiResponse;
-                            addEntryToHistory({ name: food_name_greek, weight: Math.round(estimated_weight_g), calories: Math.round((estimated_weight_g / 100) * calories_per_100g) });
-                        } else if (aiResponse.analysis_type === 'average') {
-                            const { food_name_greek, calories, weight } = aiResponse;
-                            addEntryToHistory({ name: food_name_greek, weight: weight, calories: calories });
-                        } else { throw new Error("Could not identify food or match type."); }
+                        // ΒΕΛΤΙΩΜΕΝΟ PROMPT
+                        const genericPrompt = `Analyze the image. Use the user's notes for context: "${userNotes}". If a 1 Euro coin is visible, use its known diameter (23.25mm) as a scale reference to estimate the food's real-world size, and then its weight and total calories. If no coin is visible, or if multiple distinct items are present, identify each item, count them, estimate the calories per item, and sum them up. Respond with {"food_name_greek": "Name", "calories": 123, "weight": 150}. If you cannot identify food, respond with {}.`;
+                        
+                        const aiResponse = await callAI(genericPrompt, base64Only);
+                        if (aiResponse.calories) {
+                            addEntryToHistory({ name: aiResponse.food_name_greek, weight: aiResponse.weight, calories: aiResponse.calories });
+                        } else {
+                            throw new Error("Could not identify food.");
+                        }
                     }
-                    switchView('today-view');
-                } catch (e) { showError('Απέτυχε η ανάλυση. Δοκιμάστε ξανά.'); console.error(e); } finally { hideLoading(); }
+                } catch (e) {
+                    showCustomAlert('Απέτυχε η ανάλυση. Δοκιμάστε ξανά με πιο καθαρή εικόνα.');
+                    console.error(e);
+                } finally {
+                    capturedImageData = null;
+                    mealDetailsInput.value = '';
+                }
+            });
+
+            cancelConfirmationBtn.addEventListener('click', () => {
+                capturedImageData = null;
+                mealDetailsInput.value = '';
+                switchView('scanner-view');
             });
             
             function findBestMatch(scannedKeywords) {
                 let bestMatch = null;
                 let maxMatchCount = 0;
-                if (productLibrary.length > 0) {
+                if (productLibrary.length > 0 && Array.isArray(scannedKeywords)) {
                     for (const product of productLibrary) {
                         const libraryKeywords = product.keywords || [];
                         const matchCount = scannedKeywords.filter(keyword => libraryKeywords.includes(keyword)).length;
@@ -400,6 +446,7 @@
                 mealData[dateStr].push(newMeal);
                 saveData();
                 showCustomAlert(`"${entry.name}" προστέθηκε στη σημερινή καταγραφή!`);
+                renderTodayView(); // Ανανέωση της λίστας αμέσως
             }
             
             function showLoading(text) { document.getElementById('loading-text').textContent = text; document.getElementById('result-text').classList.add('hidden'); document.getElementById('error-message').classList.add('hidden'); loadingIndicator.classList.remove('hidden'); }
@@ -508,7 +555,7 @@
                         productLibrary.push({ id: `prod_${Date.now()}`, name, caloriesPer100g: calories, weight, imageBase64: newProductData.imageBase64, keywords: newProductData.keywords });
                         await showCustomAlert(`Το προϊόν "${name}" αποθηκεύτηκε!`);
                     }
-                    saveData(); closeModal(); switchView('library-view'); renderProductLibrary();
+                    saveData(); closeModal(); switchView('library-view');
                 } catch(e) { await showCustomAlert('Απέτυχε η δημιουργία οπτικής περιγραφής. Το προϊόν δεν αποθηκεύτηκε.'); } 
                 finally { btn.textContent = "Αποθήκευση"; btn.disabled = false; }
             }
