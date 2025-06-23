@@ -450,7 +450,7 @@
                 const payload = { contents: [{ role: "user", parts: parts }]};
                 if(expectJson) payload.generationConfig = { responseMimeType: "application/json" };
                 const apiKey = "AIzaSyCc3SAooOx7gLDPcWZeKrpCC-iBDDpq1Gc";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`API Error: ${response.status}`);
                 const result = await response.json();
