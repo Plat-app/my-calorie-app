@@ -136,7 +136,7 @@
     <div id="camera-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 flex flex-col items-center justify-center p-4 z-50">
         <button id="camera-close-btn" class="absolute top-5 right-5 text-white text-4xl">&times;</button>
         <div class="w-full max-w-sm" style="aspect-ratio: 1/1;">
-            <div class="relative w-full h-full rounded-2xl bg-black overflow-hidden">
+            <div id="video-container" class="relative w-full h-full rounded-2xl bg-black overflow-hidden">
                 <video id="video" class="w-full h-full object-cover" playsinline autoplay muted></video>
             </div>
         </div>
@@ -216,7 +216,7 @@
 
             // --- Utility Functions ---
             const toISODateString = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const showCustomAlert = (message) => alert(message); // Placeholder
+            const showCustomAlert = (message) => alert(message); 
 
             // --- Data Persistence ---
             const saveData = () => {
@@ -256,7 +256,7 @@
             const updateHomeDayDetails = (dateStr) => {
                 const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
                 document.getElementById('today-total-calories').textContent = totalCalories;
-                renderMealList(document.getElementById('today-log-list'), dateStr, 'home');
+                renderMealList(document.getElementById('today-log-list'), dateStr);
             };
             
             const renderWeeklyChart = () => {
@@ -280,20 +280,18 @@
                     });
                     if (totalCalories > maxCalories) maxCalories = totalCalories;
                 }
-                if (maxCalories === 0) maxCalories = 2500; // Default height
+                if (maxCalories === 0) maxCalories = 2500;
 
                 weekData.forEach(day => {
-                    // Day label
                     const dayLabel = document.createElement('span');
                     dayLabel.textContent = day.label;
                     daysEl.appendChild(dayLabel);
 
-                    // Bar
                     const barHeight = Math.max(1, (day.calories / maxCalories) * 100);
                     const barColor = day.dateStr === selectedDateInChart ? 'bg-cyan-400' : 'bg-gray-700';
                     
                     const barWrapper = document.createElement('div');
-                    barWrapper.className = 'flex-1 flex flex-col items-center justify-end h-full cursor-pointer p-1';
+                    barWrapper.className = 'flex-1 flex flex-col items-center h-full cursor-pointer p-1';
                     barWrapper.dataset.date = day.dateStr;
 
                     const barAndTextContainer = document.createElement('div');
@@ -310,7 +308,7 @@
 
                     barWrapper.addEventListener('click', () => {
                         selectedDateInChart = day.dateStr;
-                        renderWeeklyChart(); // Re-render to update selection
+                        renderWeeklyChart();
                         updateHomeDayDetails(day.dateStr);
                     });
                 });
@@ -349,8 +347,8 @@
             const showCalendarDetails = (dateStr) => {
                 const detailsCard = document.getElementById('calendar-details-card');
                 const totalCalories = (mealData[dateStr] || []).reduce((sum, meal) => sum + meal.calories, 0);
-                if (totalCalories > 0) {
-                    detailsCard.innerHTML = `Total for ${new Date(dateStr.replace(/-/g, '/')).toLocaleDateString()}: <strong>${totalCalories} kcal</strong>`;
+                if (totalCalories > 0 || (mealData[dateStr] && mealData[dateStr].length > 0)) {
+                    detailsCard.innerHTML = `Total for ${new Date(dateStr.replace(/-/g, '/')).toLocaleDateString('default', {dateStyle: 'long'})}: <strong>${totalCalories} kcal</strong>`;
                     detailsCard.classList.remove('hidden');
                     detailsCard.onclick = () => {
                         renderDailyLog(dateStr);
@@ -397,7 +395,7 @@
                 listElement.innerHTML = '';
                 const dayMeals = mealData[dateStr] || [];
                 if (dayMeals.length === 0) {
-                    listElement.innerHTML = `<li class="text-center text-gray-500 p-8">No meals recorded for this day.</li>`;
+                    listElement.innerHTML = `<li class="text-center text-gray-500 p-8">No meals recorded.</li>`;
                     return;
                 }
                 dayMeals.forEach(meal => {
@@ -476,26 +474,19 @@
             });
 
             document.getElementById('analyze-confirmation-btn').addEventListener('click', async () => {
-                const base64Data = capturedImageData.split(',')[1];
+                // This would be where the AI call happens
                 const notes = document.getElementById('meal-details').value;
+                showCustomAlert(`Analysis started with notes: ${notes}`);
                 closeConfirmation();
-                showCustomAlert("Analyzing... please wait.");
-                // AI Call logic here
             });
             
             document.querySelector('.back-to-calendar-btn').addEventListener('click', () => switchView('calendar-view'));
             document.getElementById('prev-month-btn').addEventListener('click', () => renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth() - 1));
             document.getElementById('next-month-btn').addEventListener('click', () => renderCalendar(calendarDate.getFullYear(), calendarDate.getMonth() + 1));
 
-
-            // --- AI Call ---
-            async function callAI(prompt, base64ImageData) {
-                // ... same AI call logic from v12.5 ...
-            }
-            
             // --- Initial Load ---
             loadData();
-            switchView('home-view'); // Start on home screen
+            switchView('home-view');
         });
     </script>
 </body>
