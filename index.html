@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Calorie Cam v13.0</title>
+    <title>AI Calorie Cam v13.1 (Final Colors)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Νέα Χρωματική Παλέτα */
+        /* FINAL, User-Confirmed Color Palette */
         :root {
-            --bg-main: #0D131A;
-            --bg-card: #1D2A38;
-            --accent-primary: #00D1E1;
-            --text-primary: #FFFFFF;
-            --text-secondary: #B0B0B0;
-            --border-color: #273442;
+            --bg-main: #111827;
+            --bg-card: #1f2937;
+            --accent-primary: #06b6d4;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --border-color: #273442; /* Kept for subtle borders */
         }
 
         body { 
@@ -40,23 +40,24 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
         .calendar-day { aspect-ratio: 1 / 1; }
-        .calendar-day.has-entries { background-color: rgba(0, 209, 225, 0.1); border: 1px solid var(--accent-primary); }
+        .calendar-day.has-entries { background-color: rgba(6, 182, 212, 0.1); border: 1px solid var(--accent-primary); }
         
-        /* Floating Action Buttons πάνω από τη μπάρα πλοήγησης */
         .fab {
             position: fixed;
             bottom: 95px; /* Adjusted to be above the nav bar */
             z-index: 30;
         }
         .chart-day-wrapper { transition: background-color 0.2s; }
-        .chart-day-wrapper:hover { background-color: rgba(29, 42, 56, 0.5); border-radius: 0.5rem; }
+        .chart-day-wrapper:hover { background-color: rgba(31, 41, 55, 0.5); border-radius: 0.5rem; }
 
-        /* Bottom Nav Bar Styles */
         .bottom-nav {
             background-color: var(--bg-card);
             border-top: 1px solid var(--border-color);
         }
-        .nav-item.active svg, .nav-item.active span {
+        .nav-item span, .nav-item svg {
+             color: var(--text-secondary); /* Default color for inactive items */
+        }
+        .nav-item.active span, .nav-item.active svg {
             color: var(--accent-primary);
         }
     </style>
@@ -77,7 +78,7 @@
                 <p style="color: var(--text-secondary);">Σύνολο Θερμίδων</p>
                 <p id="today-total-calories" class="text-5xl font-bold" style="color: var(--accent-primary);">0 kcal</p>
             </div>
-            <h2 id="today-log-list-title" class="text-lg font-semibold mb-2">Γεύματα Ημέρας</h2>
+            <h2 id="today-log-list-title" class="text-lg font-semibold mb-2" style="color: var(--text-primary);">Γεύματα Ημέρας</h2>
             <ul id="today-log-list" class="space-y-2 pb-24"></ul>
         </div>
         
@@ -86,19 +87,19 @@
              <div class="rounded-3xl shadow-2xl p-6 mb-4" style="background-color: var(--bg-card);">
                 <div id="video-container" class="mb-2 shadow-lg">
                     <div id="camera-activator" class="absolute inset-0 flex flex-col items-center justify-center rounded-2xl z-10 cursor-pointer transition-colors" style="background-color: #273442;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--text-secondary);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         <p class="font-semibold" style="color: var(--text-primary);">Ενεργοποίηση Κάμερας</p>
                     </div>
                     <video id="video" class="hidden" playsinline autoplay muted></video>
                 </div>
-                <p id="scan-instruction" class="text-center text-xs text-amber-400 mb-4 p-2 rounded-lg" style="background-color: rgba(29, 42, 56, 0.5);">Ενεργοποιήστε την κάμερα για να ξεκινήσετε.</p>
+                <p id="scan-instruction" class="text-center text-xs text-amber-400 mb-4 p-2 rounded-lg" style="background-color: rgba(31, 41, 55, 0.5);">Ενεργοποιήστε την κάμερα για να ξεκινήσετε.</p>
                 <canvas id="canvas" class="hidden"></canvas>
-                <div class="flex justify-center mb-6"><button id="capture-btn" class="shutter-button transition-all w-20 h-20 bg-white rounded-full border-4 border-gray-500 flex items-center justify-center focus:outline-none" disabled><div class="w-16 h-16 bg-white rounded-full border-2" style="border-color: var(--bg-main);"></div></button></div>
+                <div class="flex justify-center mb-6"><button id="capture-btn" class="shutter-button transition-all w-20 h-20 bg-white rounded-full border-4 flex items-center justify-center focus:outline-none" style="border-color: var(--text-secondary);" disabled><div class="w-16 h-16 bg-white rounded-full border-2" style="border-color: var(--bg-main);"></div></button></div>
             </div>
         </div>
 
         <div id="confirmation-view" class="app-view max-w-md mx-auto">
-            <h2 class="text-2xl font-bold mb-4">Επιβεβαίωση Γεύματος</h2>
+            <h2 class="text-2xl font-bold mb-4" style="color: var(--text-primary);">Επιβεβαίωση Γεύματος</h2>
             <div class="rounded-3xl shadow-2xl p-6 mb-4" style="background-color: var(--bg-card);">
                 <div class="w-full bg-black rounded-2xl overflow-hidden mb-4" style="aspect-ratio: 1 / 1;">
                     <img id="confirmation-image" src="" class="w-full h-full object-cover">
@@ -111,14 +112,14 @@
         </div>
 
         <div id="calendar-view" class="app-view max-w-md mx-auto">
-            <div class="flex justify-between items-center mb-4"><button id="prev-month-btn" class="p-2 rounded-full" style="background-color: var(--bg-card);">&lt;</button><h2 id="month-year-title" class="text-xl font-semibold"></h2><button id="next-month-btn" class="p-2 rounded-full" style="background-color: var(--bg-card);">&gt;</button></div>
+            <div class="flex justify-between items-center mb-4"><button id="prev-month-btn" class="p-2 rounded-full" style="background-color: var(--bg-card);">&lt;</button><h2 id="month-year-title" class="text-xl font-semibold" style="color: var(--text-primary);"></h2><button id="next-month-btn" class="p-2 rounded-full" style="background-color: var(--bg-card);">&gt;</button></div>
             <div class="grid calendar-grid text-center font-semibold text-xs mb-2" style="color: var(--text-secondary);"><div>ΔΕΥ</div><div>ΤΡΙ</div><div>ΤΕΤ</div><div>ΠΕΜ</div><div>ΠΑΡ</div><div>ΣΑΒ</div><div>ΚΥΡ</div></div>
             <div id="calendar-body" class="grid calendar-grid gap-1"></div>
         </div>
         
         <div id="daily-log-view" class="app-view max-w-md mx-auto">
              <button class="back-to-calendar-btn mb-4" style="color: var(--accent-primary);">&lt; Επιστροφή στο Calendar</button>
-             <h2 id="daily-log-date" class="text-2xl font-bold mb-4"></h2>
+             <h2 id="daily-log-date" class="text-2xl font-bold mb-4" style="color: var(--text-primary);"></h2>
              <ul id="daily-log-list" class="space-y-2 mb-4"></ul>
              <div class="p-4 rounded-lg text-right" style="background-color: var(--bg-card);"><p style="color: var(--text-secondary);">Σύνολο Ημέρας:</p><p id="daily-log-total" class="text-2xl font-bold" style="color: var(--accent-primary);"></p></div>
         </div>
@@ -129,10 +130,10 @@
         </div>
     </main>
 
-    <button id="text-analyzer-fab" class="fab left-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg" style="background-color: #34A853;">
+    <button id="text-analyzer-fab" class="fab left-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg" style="background-color: #38a169;">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
     </button>
-    <button id="fab-scan-btn" class="fab right-6 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg" style="background-color: var(--accent-primary);">
+    <button id="fab-scan-btn" class="fab right-6 w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg" style="background-color: #06b6d4;">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
     </button>
     
@@ -140,19 +141,19 @@
         <div class="rounded-2xl w-full max-w-md p-6 flex flex-col" style="background-color: var(--bg-card);">
             <div id="modal-video-container" class="mb-4"><video id="modal-video" class="rounded-lg" playsinline autoplay muted></video></div>
             <div id="modal-steps-container">
-                <div id="modal-step-1" class="modal-step"><h2 class="text-xl font-bold mb-2">Βήμα 1: Σάρωση Ετικέτας</h2><p class="text-sm mb-4" style="color: var(--text-secondary);">Για καλύτερη εστίαση, πατήστε στην οθόνη πριν τη λήψη.</p><button id="capture-label-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Σάρωση Ετικέtas</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
-                <div id="modal-step-2" class="hidden modal-step"><h2 id="step2-title" class="text-xl font-bold mb-2">Βήμα 2: Επιβεβαίωση Θερμίδων και Βάρους</h2><div class="mb-4"><label for="calories-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Θερμίδες ανά 100g (kcal)</label><input type="number" id="calories-input" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><div class="mb-4"><label for="weight-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Βάρος προϊόντος (g)</label><input type="number" id="weight-input" placeholder="π.χ. 60" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><button id="confirm-data-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Επόμενο Βήμα</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
-                <div id="modal-step-3" class="hidden modal-step"><h2 class="text-xl font-bold mb-2">Βήμα 3: Φωτογράφιση Προϊόντος</h2><p class="text-sm mb-4" style="color: var(--text-secondary);">Τώρα, φωτογραφίστε το ίδιο το προϊόν, καθαρά και μόνο του.</p><button id="capture-product-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Φωτογράφιση Προϊόντος</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
-                <div id="modal-step-4" class="hidden modal-step"><h2 id="step4-title" class="text-xl font-bold mb-2">Βήμα 4: Ονομασία</h2><div class="mb-4"><img id="product-preview-img" src="" class="rounded-lg max-h-32 mx-auto mb-2"><button id="recapture-product-btn" class="hidden text-sm mb-2" style="color: var(--accent-primary);">Νέα Φωτογραφία</button><label for="product-name-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Δώστε ένα όνομα στο προϊόν σας</label><input type="text" id="product-name-input" placeholder="π.χ. Η μπάρα μου" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><button id="save-product-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: #34A853;">Αποθήκευση</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
+                <div id="modal-step-1" class="modal-step"><h2 class="text-xl font-bold mb-2" style="color: var(--text-primary);">Βήμα 1: Σάρωση Ετικέτας</h2><p class="text-sm mb-4" style="color: var(--text-secondary);">Για καλύτερη εστίαση, πατήστε στην οθόνη πριν τη λήψη.</p><button id="capture-label-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Σάρωση Ετικέtas</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
+                <div id="modal-step-2" class="hidden modal-step"><h2 id="step2-title" class="text-xl font-bold mb-2" style="color: var(--text-primary);">Βήμα 2: Επιβεβαίωση Θερμίδων και Βάρους</h2><div class="mb-4"><label for="calories-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Θερμίδες ανά 100g (kcal)</label><input type="number" id="calories-input" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><div class="mb-4"><label for="weight-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Βάρος προϊόντος (g)</label><input type="number" id="weight-input" placeholder="π.χ. 60" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><button id="confirm-data-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Επόμενο Βήμα</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
+                <div id="modal-step-3" class="hidden modal-step"><h2 class="text-xl font-bold mb-2" style="color: var(--text-primary);">Βήμα 3: Φωτογράφιση Προϊόντος</h2><p class="text-sm mb-4" style="color: var(--text-secondary);">Τώρα, φωτογραφίστε το ίδιο το προϊόν, καθαρά και μόνο του.</p><button id="capture-product-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: var(--accent-primary);">Φωτογράφιση Προϊόντος</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
+                <div id="modal-step-4" class="hidden modal-step"><h2 id="step4-title" class="text-xl font-bold mb-2" style="color: var(--text-primary);">Βήμα 4: Ονομασία</h2><div class="mb-4"><img id="product-preview-img" src="" class="rounded-lg max-h-32 mx-auto mb-2"><button id="recapture-product-btn" class="hidden text-sm mb-2" style="color: var(--accent-primary);">Νέα Φωτογραφία</button><label for="product-name-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Δώστε ένα όνομα στο προϊόν σας</label><input type="text" id="product-name-input" placeholder="π.χ. Η μπάρα μου" class="mt-1 block w-full rounded-md shadow-sm py-2 px-3" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></div><button id="save-product-btn" class="w-full text-white font-bold py-3 rounded-lg" style="background-color: #38a169;">Αποθήκευση</button><button class="modal-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button></div>
             </div>
         </div>
     </div>
     <div id="text-analyzer-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
         <div class="rounded-2xl w-full max-w-md p-6 flex flex-col" style="background-color: var(--bg-card);">
-            <h2 class="text-xl font-bold mb-2">✨ Αναλυτής Γεύματος</h2>
+            <h2 class="text-xl font-bold mb-2" style="color: var(--text-primary);">✨ Αναλυτής Γεύματος</h2>
             <p class="text-sm mb-4" style="color: var(--text-secondary);">Περιγράψτε το γεύμα σας (π.χ. "Σαλάτα με κοτόπουλο και σως").</p>
             <textarea id="text-analyzer-input" class="w-full rounded-md shadow-sm p-2" rows="4" style="background-color: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border-color);"></textarea>
-            <button id="analyze-text-btn" class="w-full text-white font-bold py-3 rounded-lg mt-4" style="background-color: #34A853;">Ανάλυση & Προσθήκη</button>
+            <button id="analyze-text-btn" class="w-full text-white font-bold py-3 rounded-lg mt-4" style="background-color: #38a169;">Ανάλυση & Προσθήκη</button>
             <button class="text-analyzer-cancel-btn w-full mt-2" style="color: var(--text-secondary);">Άκυρο</button>
         </div>
     </div>
@@ -179,20 +180,19 @@
              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             <span class="text-xs font-medium">My Library</span>
         </button>
-        <button class="nav-item flex flex-col items-center justify-center space-y-1 w-full h-full" style="color: #6B7280;" disabled> <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        <button class="nav-item flex flex-col items-center justify-center space-y-1 w-full h-full" style="color: var(--text-secondary);" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             <span class="text-xs font-medium">Profile</span>
         </button>
     </nav>
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Re-engineered for new Navigation ---
         const headerTitle = document.getElementById('header-title');
         const bottomNav = document.getElementById('bottom-navigation');
         const navItems = bottomNav.querySelectorAll('.nav-item');
         const appViews = document.querySelectorAll('.app-view');
         
-        // --- Other DOM Elements ---
         const fabScanBtn = document.getElementById('fab-scan-btn');
         const todayTotalCaloriesEl = document.getElementById('today-total-calories');
         const todayLogListEl = document.getElementById('today-log-list');
@@ -220,7 +220,6 @@
         const analyzeConfirmationBtn = document.getElementById('analyze-confirmation-btn');
         const cancelConfirmationBtn = document.getElementById('cancel-confirmation-btn');
         
-        // --- State ---
         let mealData = {};
         let productLibrary = [];
         let currentDate = new Date();
@@ -237,32 +236,23 @@
             'daily-log-view': 'Daily Log'
         };
 
-        // --- Core Functions ---
         function saveData() { localStorage.setItem('mealData', JSON.stringify(mealData)); localStorage.setItem('productLibrary', JSON.stringify(productLibrary)); }
         function loadData() { mealData = JSON.parse(localStorage.getItem('mealData') || '{}'); productLibrary = JSON.parse(localStorage.getItem('productLibrary') || '[]'); }
 
-        // --- NEW View Switching ---
         function switchView(viewId) {
             if (mainStream && viewId !== 'confirmation-view') { stopCamera(mainStream); mainStream = null; }
             appViews.forEach(view => view.classList.remove('active'));
             const newView = document.getElementById(viewId);
             if(newView) newView.classList.add('active');
             
-            // Update Header Title
             headerTitle.textContent = viewTitles[viewId] || 'AI Calorie Cam';
 
-            // Update Active Nav Item
             navItems.forEach(item => {
                 item.classList.remove('active');
                 if (item.dataset.view === viewId) {
                     item.classList.add('active');
                 }
-                // Default color for all nav text/svg
-                item.style.color = 'var(--text-secondary)';
             });
-            const activeNavItem = bottomNav.querySelector(`.nav-item[data-view="${viewId}"]`);
-            if(activeNavItem) activeNavItem.style.color = 'var(--accent-primary)';
-
 
             const isScannerRelated = viewId === 'scanner-view' || viewId === 'confirmation-view';
             fabScanBtn.style.display = isScannerRelated ? 'none' : 'flex';
@@ -276,9 +266,8 @@
             if (viewId === 'scanner-view') initializeScannerCamera();
         }
 
-        // --- Event Listeners for NEW Navigation ---
         navItems.forEach(item => {
-            if (item.dataset.view) { // Only add listener to items that have a view
+            if (item.dataset.view) {
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
                     switchView(item.dataset.view);
@@ -286,7 +275,6 @@
             }
         });
 
-        // --- "Home" View Functions ---
         function renderTodayView() {
             const now = new Date();
             selectedDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -340,13 +328,12 @@
                         </div>
                         <div class="w-full rounded-t-md" style="height: ${barHeightPercent}%; background-color: ${barColor};" title="${day.calories} kcal"></div>
                     </div>
-                    <div class="text-xs mt-1">${day.label}</div>
+                    <div class="text-xs mt-1" style="color: var(--text-secondary);">${day.label}</div>
                 `;
                 weeklyChartEl.appendChild(dayWrapper);
             });
         }
 
-        // --- Meal List & Management ---
         function renderMealList(listElement, dateStr) {
             const dayMeals = mealData[dateStr] || [];
             listElement.innerHTML = '';
@@ -357,7 +344,7 @@
                     const li = document.createElement('li');
                     li.className = 'p-3 rounded-lg flex justify-between items-center';
                     li.style.backgroundColor = 'var(--bg-card)';
-                    li.innerHTML = `<div><p class="font-semibold">${meal.name}</p><p class="text-sm" style="color: var(--text-secondary);">${meal.time}</p></div><div class="flex items-center"><strong class="mr-4" style="color: var(--accent-primary);">${meal.calories} kcal</strong><button class="delete-meal-btn" data-date="${dateStr}" data-id="${meal.id}"><svg class="w-6 h-6 text-red-500 hover:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg></button></div>`;
+                    li.innerHTML = `<div><p class="font-semibold" style="color: var(--text-primary);">${meal.name}</p><p class="text-sm" style="color: var(--text-secondary);">${meal.time}</p></div><div class="flex items-center"><strong class="mr-4" style="color: var(--accent-primary);">${meal.calories} kcal</strong><button class="delete-meal-btn" data-date="${dateStr}" data-id="${meal.id}"><svg class="w-6 h-6 text-red-500 hover:text-red-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg></button></div>`;
                     listElement.appendChild(li);
                 });
             }
@@ -391,10 +378,6 @@
             }
         }
         
-        // --- Remaining JS code (Camera, AI, Modals, etc.) ---
-        // This part remains largely unchanged in logic, only minor updates for view switching and element selection if needed.
-        // It's copied here for completeness.
-
         fabScanBtn.addEventListener('click', () => switchView('scanner-view'));
         textAnalyzerFab.addEventListener('click', () => textAnalyzerModal.classList.remove('hidden'));
         document.querySelector('.text-analyzer-cancel-btn').addEventListener('click', () => textAnalyzerModal.classList.add('hidden'));
@@ -561,7 +544,7 @@
                 dayDiv.style.borderColor = 'var(--border-color)';
                 dayDiv.style.borderWidth = '1px';
                 if(dayMeals.length > 0) dayDiv.classList.add('has-entries');
-                dayDiv.innerHTML = `<span class="font-bold">${day}</span>`;
+                dayDiv.innerHTML = `<span class="font-bold" style="color: var(--text-primary);">${day}</span>`;
                 if(totalCalories > 0) dayDiv.innerHTML += `<span class="text-xs" style="color: var(--accent-primary);">${totalCalories} kcal</span>`;
                 dayDiv.addEventListener('click', () => { renderDailyLog(dateStr); switchView('daily-log-view'); });
                 calendarBody.appendChild(dayDiv);
@@ -585,7 +568,7 @@
                 const li = document.createElement('li');
                 li.className = 'p-3 rounded-lg flex justify-between items-center';
                 li.style.backgroundColor = 'var(--bg-card)';
-                li.innerHTML = `<div class="flex items-center space-x-3"><img src="${product.imageBase64}" class="w-12 h-12 rounded-md object-cover"><div><p class="font-semibold">${product.name}</p><p class="text-sm" style="color: var(--text-secondary);">${product.caloriesPer100g} kcal/100g - ${product.weight}g</p></div></div><div class="flex space-x-2"><button class="edit-product-btn text-sm p-2 rounded text-white" style="background-color: var(--accent-primary);" data-id="${product.id}">Επεξεργασία</button><button class="delete-product-btn text-sm p-2 rounded text-white" style="background-color: #EF5350;" data-id="${product.id}">Διαγραφή</button></div>`;
+                li.innerHTML = `<div class="flex items-center space-x-3"><img src="${product.imageBase64}" class="w-12 h-12 rounded-md object-cover"><div><p class="font-semibold" style="color: var(--text-primary);">${product.name}</p><p class="text-sm" style="color: var(--text-secondary);">${product.caloriesPer100g} kcal/100g - ${product.weight}g</p></div></div><div class="flex space-x-2"><button class="edit-product-btn text-sm p-2 rounded text-white" style="background-color: var(--accent-primary);" data-id="${product.id}">Επεξεργασία</button><button class="delete-product-btn text-sm p-2 rounded text-white" style="background-color: #EF5350;" data-id="${product.id}">Διαγραφή</button></div>`;
                 productLibraryList.appendChild(li);
             });
             document.querySelectorAll('.edit-product-btn').forEach(btn => btn.addEventListener('click', handleEditProduct));
