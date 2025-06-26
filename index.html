@@ -393,7 +393,7 @@
                 // --- CHANGE: All library list item HTML updated for new design ---
                 li.innerHTML = `
                     <div class="flex items-center space-x-4">
-                        <img src="${product.imageBase64}" class="w-16 h-16 rounded-md object-cover">
+                        <img src="${product.imageBase64}" class="w-[72px] h-[72px] rounded-md object-cover">
                         <div>
                             <p class="font-semibold" style="color: var(--text-primary);">${product.name}</p>
                             <p class="text-sm" style="color: var(--text-secondary);">${product.weight}g &middot; ${Math.round((product.caloriesPer100g / 100) * product.weight)} kcal</p>
